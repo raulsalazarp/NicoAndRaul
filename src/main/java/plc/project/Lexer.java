@@ -56,7 +56,7 @@ public final class Lexer {
         if(peek("[A-Za-z_]")){
             return lexIdentifier();
         }
-        else if(peek("[\\+|\\-]?") || peek("[0-9]")){
+        else if(peek("[\\+|\\-]?") || peek(" [0-9]")){
             System.out.println("hello");
             return lexNumber();
         }
