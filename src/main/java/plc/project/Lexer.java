@@ -76,7 +76,7 @@ public final class Lexer {
     public boolean peek(String... patterns) {
         for(int i = 0; i < patterns.length; i++){
             if ( !chars.has(i) || !String.valueOf(chars.get(i)).matches(patterns[i]) ){
-                return false;
+                return false; //hello
             }
         }
         return true;
