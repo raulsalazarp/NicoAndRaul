@@ -1,5 +1,6 @@
 package plc.project;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,7 +30,16 @@ public final class Lexer {
      * whitespace where appropriate.
      */
     public List<Token> lex() {
-        throw new UnsupportedOperationException(); //TODO
+        List<Token> tokens = new ArrayList<Token>();
+        while(chars.index < chars.input.length()){
+            if(chars.input.charAt(chars.index) == ' '){
+                chars.index++;
+            }
+            else{
+                tokens.add(lexToken());
+            }
+        }
+        return tokens;
     }
 
     /**
