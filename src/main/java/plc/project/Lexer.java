@@ -74,8 +74,13 @@ public final class Lexer {
         throw new UnsupportedOperationException();
     }
 
-    public Token lexIdentifier() {
-        throw new UnsupportedOperationException(); //TODO
+    public Token lexIdentifier() {//String tok = ""+chars.input.charAt(chars.index);
+        match("[A-Za-z_]");
+        while(peek("[A-Za-z0-9_-]*")){ //tok+=chars.input.charAt(chars.index);
+            match("[A-Za-z0-9_-]*");
+        }
+        return chars.emit(Token.Type.IDENTIFIER);
+
     }
 
     public Token lexNumber() {
