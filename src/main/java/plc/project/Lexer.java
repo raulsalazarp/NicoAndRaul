@@ -40,6 +40,7 @@ public final class Lexer {
      * The next character should start a valid token since whitespace is handled
      * by {@link #lex()}
      */
+
     public Token lexToken() {
         throw new UnsupportedOperationException(); //TODO
     }
@@ -73,21 +74,26 @@ public final class Lexer {
      * which should be a regex. For example, {@code peek("a", "b", "c")} would
      * return true if the next characters are {@code 'a', 'b', 'c'}.
      */
-    public boolean peek(String... patterns) {
-        for(int i = 0; i < patterns.length; i++){
-            if ( !chars.has(i) || !String.valueOf(chars.get(i)).matches(patterns[i]) ){
+    /* [A-Za-z_] [A-Za-z0-9_-]* for identifier
+     *
+     * peek("[A-Za-z_]") and if true then call the lexIdetnfiier and loop
+     *
+     *
+     * */
+    public boolean peek(String... patterns) { //patterns is meant to be a regex that cooressponds to one character
+        for (int i = 0; i < patterns.length; i++) {
+            if (!chars.has(i) || !String.valueOf(chars.get(i)).matches(patterns[i])) { //first check if we're past the index
                 return false; //testing version control 1
             }
         }
         return true;//testing version control 2
-    }
-
+    } //while we match on regulkar expression with asterisk
     /**
      * Returns true in the same way as {@link #peek(String...)}, but also
      * advances the character stream past all matched characters if peek returns
      * true. Hint - it's easiest to have this method simply call peek.
      */
-    public boolean match(String... patterns) {
+    public boolean match(String... patterns) { //string... is variable arghuments -> arbitrary amount of strings "match(string1,string2)"
         boolean peek = peek(patterns);
         if(peek){
             for(int i = 0; i < patterns.length; i++){
