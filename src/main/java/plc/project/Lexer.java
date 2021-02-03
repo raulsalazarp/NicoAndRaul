@@ -52,7 +52,26 @@ public final class Lexer {
      */
 
     public Token lexToken() {
-        throw new UnsupportedOperationException(); //TODO
+         //TODO
+        if(peek("[A-Za-z_]")){
+            return lexIdentifier();
+        }
+        else if(peek("[+\\-]? [0-9]+")){
+            return lexNumber();
+        }
+        else if(peek("\'")){
+            return lexCharacter();
+        }
+        else if(peek("\"")){
+            return lexString();
+        }
+        else if(peek("\\")){
+            //return lexEscape();
+        }
+        else if(peek("[<>!=] '='?")){
+            return lexOperator();
+        }
+        throw new UnsupportedOperationException();
     }
 
     public Token lexIdentifier() {
