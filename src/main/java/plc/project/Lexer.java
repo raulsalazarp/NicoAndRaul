@@ -75,8 +75,11 @@ public final class Lexer {
      */
     public boolean peek(String... patterns) {
         for(int i = 0; i < patterns.length; i++){
-
+            if ( !chars.has(i) || !String.valueOf(chars.get(i)).matches(patterns[i]) ){
+                return false;
+            }
         }
+        return true;
     }
 
     /**
@@ -85,7 +88,13 @@ public final class Lexer {
      * true. Hint - it's easiest to have this method simply call peek.
      */
     public boolean match(String... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in lecture)
+        boolean peek = peek(patterns);
+        if(peek){
+            for(int i = 0; i < patterns.length; i++){
+                chars.advance();
+            }
+        }
+        return peek;
     }
 
     /**
