@@ -68,7 +68,7 @@ public final class Lexer {
             return lexString();
         }
         else if(peek("\\\\")){
-            //return lexEscape();
+            lexEscape();
         }
         else if(peek("[<>!=] '='?")){
             return lexOperator();
@@ -115,7 +115,24 @@ public final class Lexer {
     }
 
     public Token lexCharacter() {
-        throw new UnsupportedOperationException(); //TODO
+        match("\'");
+        if(peek("\'"))
+            throw new ParseException("Error: Character Token Invalid",chars.index);
+        if(peek("\\\\")){
+            lexEscape();
+        }
+        else{
+            if(peek("((.))")){ //fix this
+                match("((.))");
+                if(peek("\'")){
+                    match("\'");
+                    return chars.emit(Token.Type.CHARACTER);
+                }
+            }
+
+        }
+
+        throw new ParseException("Error: Character Token Invalid",chars.index);
     }
 
     public Token lexString() {
@@ -123,7 +140,36 @@ public final class Lexer {
     }
 
     public void lexEscape() {
-        throw new UnsupportedOperationException(); //TODO
+        boolean allgood = false;
+        match("\\\\");
+        if(peek("b")){
+            match("b");
+            allgood = true;
+        }
+        if(peek("n")){
+            match("n");
+            allgood = true;
+        }
+        if(peek("r")){
+            match("r");
+            allgood = true;
+        }
+        if(peek("t")){
+            match("t");
+            allgood = true;
+        }
+        if(peek("\\'")){
+            match("\\'");
+            allgood = true;
+        }
+        if(peek("\"")){
+            match("\'");
+            allgood = true;
+        }
+        if(!allgood){
+            throw new ParseException("Error: Invalid escape sequence", chars.index);
+        }
+
         //make sure indeed escape else exception
         //call this in lex string and lex char to make sure escape is valid
     }
