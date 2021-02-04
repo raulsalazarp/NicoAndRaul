@@ -33,7 +33,8 @@ public final class Lexer {
         List<Token> tokens = new ArrayList<Token>();
         while(chars.index < chars.input.length()){
             if(chars.input.charAt(chars.index) == ' '){
-                chars.index++;
+                chars.advance();
+                chars.skip();
             }
             else{
                 tokens.add(lexToken());
@@ -56,7 +57,7 @@ public final class Lexer {
         if(peek("[A-Za-z_]")){
             return lexIdentifier();
         }
-        else if(peek("[\\+|\\-]?") || peek("[0-9]")){
+        else if(peek("[\\+|\\-]") || peek("[0-9]")){
             System.out.println("hello");
             return lexNumber();
         }
@@ -66,13 +67,13 @@ public final class Lexer {
         else if(peek("\"")){
             return lexString();
         }
-        else if(peek("\\")){
+        else if(peek("\\\\")){
             //return lexEscape();
         }
         else if(peek("[<>!=] '='?")){
             return lexOperator();
         }
-        throw new UnsupportedOperationException();
+        throw new ParseException("Error: Unidentified token",chars.index); //parse exception
     }
 
     public Token lexIdentifier() {//String tok = ""+chars.input.charAt(chars.index);
@@ -85,13 +86,20 @@ public final class Lexer {
     }
 
     public Token lexNumber() {
-        match("[\\+|\\-]? [0-9]+");
+        if(peek("[\\+|\\-]")){
+            match("[\\+|\\-]");
+            if(!peek("[0-9]+")){
+                throw new ParseException("Error: Sign must be followed by an integer",chars.index);
+            }
+        }
+
+        match("[0-9]+");
         while(peek("[0-9]+")) {
             match("[0-9]+");
         }
 
-        if(peek("'.'")){
-            match("'.'");
+        if(peek("\\.")){
+            match("\\.");
             if(peek("[0-9]+")) {
                 while(peek("[0-9]+")){
                     match("[0-9]+");
@@ -99,8 +107,7 @@ public final class Lexer {
                 return chars.emit(Token.Type.DECIMAL);
             }
             else{
-                //i think return error
-                throw new UnsupportedOperationException();
+                throw new ParseException("Error: Trailing decimal",chars.index);
             }
         }
         return chars.emit(Token.Type.INTEGER);
@@ -117,6 +124,8 @@ public final class Lexer {
 
     public void lexEscape() {
         throw new UnsupportedOperationException(); //TODO
+        //make sure indeed escape else exception
+        //call this in lex string and lex char to make sure escape is valid
     }
 
     public Token lexOperator() {
