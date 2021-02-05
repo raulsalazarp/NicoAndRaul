@@ -91,7 +91,10 @@ public class LexerTests {
                 Arguments.of("Alphabetic", "\"abc\"", true),
                 Arguments.of("Newline Escape", "\"Hello,\\nWorld\"", true),
                 Arguments.of("Unterminated", "\"unterminated", false),
-                Arguments.of("Invalid Escape", "\"invalid\\escape\"", false)
+                Arguments.of("Invalid Escape", "\"invalid\\escape\"", false),
+                Arguments.of("Unterminated with escape at end", "\"unterminated\\n", false),
+                Arguments.of("Negated set included", "\"unterminated\n\"", false),
+                Arguments.of("Stuff after end quote", "\"unterminated\"not finished", false)
         );
     }
 

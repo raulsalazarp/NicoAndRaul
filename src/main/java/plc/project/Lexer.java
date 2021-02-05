@@ -70,7 +70,7 @@ public final class Lexer {
         else if(peek("\\\\")){
             lexEscape();
         }
-        else if(peek("[<>!=] '='?")){
+        else if(peek("[<>!=]") || peek("[^\b\n\r\t' ']")){
             return lexOperator();
         }
         throw new ParseException("Error: Unidentified token",chars.index); //parse exception
@@ -205,7 +205,20 @@ public final class Lexer {
     }
 
     public Token lexOperator() {
-        throw new UnsupportedOperationException(); //TODO
+
+        if(peek("[<>!=]")){
+            match("[<>!=]");
+            if(peek("=")){
+                match("=");
+                return chars.emit(Token.Type.OPERATOR);
+            }
+            return chars.emit(Token.Type.OPERATOR);
+        }
+        else{
+            match(".");
+            return chars.emit(Token.Type.OPERATOR);
+        }
+
     }
 
     /**
