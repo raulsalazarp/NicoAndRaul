@@ -143,7 +143,27 @@ public final class Lexer {
     }
 
     public Token lexString() {
-        throw new UnsupportedOperationException(); //TODO
+        match("\"");
+        while(peek("[^\"\n\r]")){
+            if(peek("\\\\")){
+                lexEscape();
+            }
+            match("[^\"\n\r]");
+        }
+        //if we left the while loop because we have an ending quote we will match with it
+        //if there is something after this ending quote this is an invalid string
+        if(peek("\"")){
+            match("\"");
+            if(peek("(.)")){
+                throw new ParseException("Error: Character Token Invalid",chars.index);
+            }
+            else{
+                //nothing after ending quote so we are chillen
+                return chars.emit(Token.Type.STRING);
+            }
+        }
+        //left the while loop but no end quote
+        throw new ParseException("Error: Character Token Invalid",chars.index);
     }
 
     public void lexEscape() {
