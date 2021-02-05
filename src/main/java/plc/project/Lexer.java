@@ -148,7 +148,9 @@ public final class Lexer {
             if(peek("\\\\")){
                 lexEscape();
             }
-            match("[^\"\n\r]");
+            else{
+                match("[^\"\n\r]");
+            }
         }
         //if we left the while loop because we have an ending quote we will match with it
         //if there is something after this ending quote this is an invalid string
