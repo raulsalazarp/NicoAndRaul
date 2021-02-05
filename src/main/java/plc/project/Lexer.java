@@ -120,6 +120,13 @@ public final class Lexer {
             throw new ParseException("Error: Character Token Invalid",chars.index);
         if(peek("\\\\")){
             lexEscape();
+            if(peek("\'")){
+                match("\'");
+            }
+            else{
+                throw new ParseException("Error: Invalid character token", chars.index);
+            }
+            return chars.emit(Token.Type.CHARACTER);
         }
         else{
             if(peek("((.))")){ //fix this
@@ -146,29 +153,30 @@ public final class Lexer {
             match("b");
             allgood = true;
         }
-        if(peek("n")){
+        else if(peek("n")){
             match("n");
             allgood = true;
         }
-        if(peek("r")){
+        else if(peek("r")){
             match("r");
             allgood = true;
         }
-        if(peek("t")){
+        else if(peek("t")){
             match("t");
             allgood = true;
         }
-        if(peek("\\'")){
+        else if(peek("\\'")){
             match("\\'");
             allgood = true;
         }
-        if(peek("\"")){
-            match("\'");
+        else if(peek("\"")){
+            match("\"");
             allgood = true;
         }
         if(!allgood){
-            throw new ParseException("Error: Invalid escape sequence", chars.index);
+            throw new ParseException("Error: Invalid escape character", chars.index);
         }
+
 
         //make sure indeed escape else exception
         //call this in lex string and lex char to make sure escape is valid
