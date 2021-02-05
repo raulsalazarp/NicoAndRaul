@@ -118,6 +118,7 @@ public final class Lexer {
         match("\'");
         if(peek("\'"))
             throw new ParseException("Error: Character Token Invalid",chars.index);
+
         if(peek("\\\\")){
             lexEscape();
             if(peek("\'")){
@@ -129,8 +130,8 @@ public final class Lexer {
             return chars.emit(Token.Type.CHARACTER);
         }
         else{
-            if(peek("((.))")){ //fix this
-                match("((.))");
+            if(peek("[^\n\r]")){ //fix this
+                match("[^\n\r]");
                 if(peek("\'")){
                     match("\'");
                     return chars.emit(Token.Type.CHARACTER);
@@ -156,13 +157,14 @@ public final class Lexer {
         //if there is something after this ending quote this is an invalid string
         if(peek("\"")){
             match("\"");
-            if(peek("(.)")){
+            return chars.emit(Token.Type.STRING);
+            /*if(peek("(.)")){
                 throw new ParseException("Error: Character Token Invalid",chars.index);
             }
             else{
                 //nothing after ending quote so we are chillen
                 return chars.emit(Token.Type.STRING);
-            }
+            }*/
         }
         //left the while loop but no end quote
         throw new ParseException("Error: Character Token Invalid",chars.index);
@@ -198,8 +200,6 @@ public final class Lexer {
         if(!allgood){
             throw new ParseException("Error: Invalid escape character", chars.index);
         }
-
-
         //make sure indeed escape else exception
         //call this in lex string and lex char to make sure escape is valid
     }

@@ -94,7 +94,7 @@ public class LexerTests {
                 Arguments.of("Invalid Escape", "\"invalid\\escape\"", false),
                 Arguments.of("Unterminated with escape at end", "\"unterminated\\n", false),
                 Arguments.of("Negated set included", "\"unterminated\n\"", false),
-                Arguments.of("Stuff after end quote", "\"unterminated\"not finished", false)
+                Arguments.of("Stuff after end quote", "\"unterminated\"not finished", false)//how do you check this thooo
         );
     }
 
