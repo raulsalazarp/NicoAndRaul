@@ -43,7 +43,8 @@ public class LexerTests {
                 Arguments.of("Plus Nine Plus", "+9+", false),
                 Arguments.of("Signed Decimal", "-1.0", false),
                 Arguments.of("Trailing Decimal", "1.", false),
-                Arguments.of("Leading Decimal", ".5", false)
+                Arguments.of("Leading Decimal", ".5", false),
+                Arguments.of("Plus Plus", "++1", false)
         );
     }
 
@@ -117,7 +118,6 @@ public class LexerTests {
                 Arguments.of("Space", " ", false),
                 Arguments.of("Plus DollarSign", "+$", false),
                 Arguments.of("Tab", "\t", false)
-
         );
     }
 
@@ -157,6 +157,13 @@ public class LexerTests {
                 Arguments.of("Example 4", "one\btwo", Arrays.asList(
                         new Token(Token.Type.IDENTIFIER, "one", 0),
                         new Token(Token.Type.IDENTIFIER, "two", 4)
+                )),
+                Arguments.of("Example 5", "5 = 4 + 1", Arrays.asList(
+                        new Token(Token.Type.INTEGER, "5", 0),
+                        new Token(Token.Type.OPERATOR, "=", 2),
+                        new Token(Token.Type.INTEGER, "4", 4),
+                        new Token(Token.Type.OPERATOR, "+", 6),
+                        new Token(Token.Type.INTEGER, "1", 8)
                 ))
         );
     }
