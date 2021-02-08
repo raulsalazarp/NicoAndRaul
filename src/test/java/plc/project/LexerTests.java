@@ -40,6 +40,7 @@ public class LexerTests {
                 Arguments.of("Negative integer", "-11", true),
                 Arguments.of("Positive sign", "+", false),
                 Arguments.of("Decimal", "123.456", false),
+                Arguments.of("Plus Nine Plus", "+9+", false),
                 Arguments.of("Signed Decimal", "-1.0", false),
                 Arguments.of("Trailing Decimal", "1.", false),
                 Arguments.of("Leading Decimal", ".5", false)
@@ -58,6 +59,7 @@ public class LexerTests {
                 Arguments.of("Multiple Digits", "123.456", true),
                 Arguments.of("Negative Decimal", "-1.0", true),
                 Arguments.of("Trailing Decimal", "1.", false),
+                Arguments.of("Decimal +9+", "+9.9+", false),
                 Arguments.of("Negative sign followed by decimal", "-.01", false),
                 Arguments.of("Leading Decimal", ".5", false)
         );
@@ -91,6 +93,7 @@ public class LexerTests {
                 Arguments.of("Alphabetic", "\"abc\"", true),
                 Arguments.of("Newline Escape", "\"Hello,\\nWorld\"", true),
                 Arguments.of("Unterminated", "\"unterminated", false),
+                Arguments.of("Valid Escape", "\"Valid\\\\escape\"", true),
                 Arguments.of("Invalid Escape", "\"invalid\\escape\"", false),
                 Arguments.of("Unterminated with escape at end", "\"unterminated\\n", false),
                 Arguments.of("Negated set included", "\"unterminated\n\"", false),
@@ -109,8 +112,12 @@ public class LexerTests {
         return Stream.of(
                 Arguments.of("Character", "(", true),
                 Arguments.of("Comparison", "<=", true),
+                Arguments.of("Plus Sign", "+", true),
+                Arguments.of("Dollar Sign", "$", true),
                 Arguments.of("Space", " ", false),
+                Arguments.of("Plus DollarSign", "+$", false),
                 Arguments.of("Tab", "\t", false)
+
         );
     }
 

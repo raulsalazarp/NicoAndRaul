@@ -14,6 +14,6 @@ public class Regex {
             //EVEN_STRINGS = Pattern.compile("^.{20}$|^.{18}$|^.{16}$|^.{14}$|^.{12}$|^.{10}$"), //TODO// TOO COMPLEX
             INTEGER_LIST = Pattern.compile("((^\\[(((((([1-9])*),\\s?))*))([1-9]+)\\])$)|(\\[\\])"), //TODO
             NUMBER = Pattern.compile("(((\\-|\\+)?(((([1-9][0-9]+|[0-9]+)+)(\\.+)([0-9]+))|((?<!\\.)(([0-9])*)))))"), //TODO
-            STRING = Pattern.compile("(^\\\"(\\\\b|\\\\n|\\\\r|\\\\t|\\\\'|\\\\\"|\\\\\\\\|[^\\\\])*\\\"$)"); //TODO
+            STRING = Pattern.compile("(^\"(\\\\b|\\\\n|\\\\r|\\\\t|\\\\'|\\\\\"|\\\\\\\\|[^\\\\])*\\\"$)"); //TODO
 
 }

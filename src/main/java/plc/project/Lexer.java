@@ -31,8 +31,9 @@ public final class Lexer {
      */
     public List<Token> lex() {
         List<Token> tokens = new ArrayList<Token>();
-        while(chars.index < chars.input.length()){
-            if(chars.input.charAt(chars.index) == ' '){
+        while(chars.has(0)) {
+            //if(chars.input.charAt(chars.index) == ' '){
+            if(peek("[' '\b\n\t\r]")){ //TODO: fix issue
                 chars.advance();
                 chars.skip();
             }
@@ -58,7 +59,12 @@ public final class Lexer {
             return lexIdentifier();
         }
         else if(peek("[\\+|\\-]") || peek("[0-9]")){
-            System.out.println("hello");
+            if(peek("[\\+|\\-]")){
+                match("[\\+|\\-]");
+                if(!peek("[0-9]")){
+                    return lexOperator();
+                }
+            }
             return lexNumber();
         }
         else if(peek("\'")){
@@ -78,39 +84,55 @@ public final class Lexer {
 
     public Token lexIdentifier() {//String tok = ""+chars.input.charAt(chars.index);
         match("[A-Za-z_]");
-        while(peek("[A-Za-z0-9_-]*")){ //tok+=chars.input.charAt(chars.index);
-            match("[A-Za-z0-9_-]*");
-        }
+        while (match("[A-Za-z0-9_-]")) {}
+        //while(peek("[A-Za-z0-9_-]*")){ //tok+=chars.input.charAt(chars.index);
+        //    match("[A-Za-z0-9_-]*");
+        //}
         return chars.emit(Token.Type.IDENTIFIER);
 
     }
 
     public Token lexNumber() {
-        if(peek("[\\+|\\-]")){
-            match("[\\+|\\-]");
-            if(!peek("[0-9]+")){
-                throw new ParseException("Error: Sign must be followed by an integer",chars.index);
-            }
-        }
 
-        match("[0-9]+");
-        while(peek("[0-9]+")) {
-            match("[0-9]+");
-        }
+        //if we get here, next characters MUST start a number
 
-        if(peek("\\.")){
-            match("\\.");
-            if(peek("[0-9]+")) {
-                while(peek("[0-9]+")){
-                    match("[0-9]+");
-                }
-                return chars.emit(Token.Type.DECIMAL);
-            }
-            else{
-                throw new ParseException("Error: Trailing decimal",chars.index);
-            }
+        match("[+\\-]");
+        while (match("[0-9]")) {}
+        if (match("\\.", "[0-9]")) {
+            while (match("[0-9]")) {}
+            return chars.emit(Token.Type.DECIMAL);
         }
         return chars.emit(Token.Type.INTEGER);
+
+        // [\+|\-] -> + or | or - |5
+
+//        if(peek("[\\+|\\-]")){
+//            match("[\\+|\\-]");
+//            if(!peek("[0-9]+")){
+//                throw new ParseException("Error: Sign must be followed by an integer",chars.index);
+//            }
+//        }
+//        if(!peek("[0-9]+")){
+//            throw new ParseException("Error: Invalid Number Token",chars.index);
+//        }
+//        match("[0-9]+");
+//        while(peek("[0-9]+")) {
+//            match("[0-9]+");
+//        }
+//
+//        if(peek("\\.")){
+//            match("\\.");
+//            if(peek("[0-9]+")) {
+//                while(peek("[0-9]+")){
+//                    match("[0-9]+");
+//                }
+//                return chars.emit(Token.Type.DECIMAL);
+//            }
+//            else{
+//                throw new ParseException("Error: Trailing decimal",chars.index);
+//            }
+//        }
+//        return chars.emit(Token.Type.INTEGER);
 
     }
 
@@ -159,7 +181,7 @@ public final class Lexer {
             match("\"");
             return chars.emit(Token.Type.STRING);
             /*if(peek("(.)")){
-                throw new ParseException("Error: Character Token Invalid",chars.index);
+                throw new ParseException("Error: String Token Invalid",chars.index);
             }
             else{
                 //nothing after ending quote so we are chillen
@@ -167,41 +189,51 @@ public final class Lexer {
             }*/
         }
         //left the while loop but no end quote
-        throw new ParseException("Error: Character Token Invalid",chars.index);
+        throw new ParseException("Error: String Token Invalid",chars.index);
     }
 
     public void lexEscape() {
-        boolean allgood = false;
         match("\\\\");
-        if(peek("b")){
-            match("b");
-            allgood = true;
-        }
-        else if(peek("n")){
-            match("n");
-            allgood = true;
-        }
-        else if(peek("r")){
-            match("r");
-            allgood = true;
-        }
-        else if(peek("t")){
-            match("t");
-            allgood = true;
-        }
-        else if(peek("\\'")){
-            match("\\'");
-            allgood = true;
-        }
-        else if(peek("\"")){
-            match("\"");
-            allgood = true;
-        }
-        if(!allgood){
+        if (!match("[bnrt\'\"\\\\]")) { //TODO fix regex
             throw new ParseException("Error: Invalid escape character", chars.index);
         }
-        //make sure indeed escape else exception
-        //call this in lex string and lex char to make sure escape is valid
+        //nothing
+
+//        boolean allgood = false;
+//        match("\\\\");
+//        if(peek("b")){
+//            match("b");
+//            allgood = true;
+//        }
+//        else if(peek("n")){
+//            match("n");
+//            allgood = true;
+//        }
+//        else if(peek("r")){
+//            match("r");
+//            allgood = true;
+//        }
+//        else if(peek("t")){
+//            match("t");
+//            allgood = true;
+//        }
+//        else if(peek("\'")){
+//            match("\'");
+//            allgood = true;
+//        }
+//        else if(peek("\"")){
+//            match("\"");
+//            allgood = true;
+//        }
+//        else if(peek("\\\\")){
+//            match("\\\\");
+//            allgood = true;
+//        }
+//        if(!allgood){
+//            throw new ParseException("Error: Invalid escape character", chars.index);
+//        }
+//        //make sure indeed escape else exception
+//        //call this in lex string and lex char to make sure escape is valid
     }
 
     public Token lexOperator() {
@@ -300,3 +332,4 @@ public final class Lexer {
     }
 
 }
+//passes example lexer tests
