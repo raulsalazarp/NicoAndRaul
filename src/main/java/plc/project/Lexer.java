@@ -95,7 +95,7 @@ public final class Lexer {
     public Token lexNumber() {
 
         //if we get here, next characters MUST start a number
-
+        //kmaone let me commit bruh
         match("[+\\-]");
         while (match("[0-9]")) {}
         if (match("\\.", "[0-9]")) {
