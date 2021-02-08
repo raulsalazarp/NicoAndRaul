@@ -142,6 +142,21 @@ public class LexerTests {
                         new Token(Token.Type.STRING, "\"Hello, World!\"", 6),
                         new Token(Token.Type.OPERATOR, ")", 21),
                         new Token(Token.Type.OPERATOR, ";", 22)
+                )),
+                Arguments.of("Example 3", "5.toString();", Arrays.asList(
+                        new Token(Token.Type.INTEGER, "5", 0),
+                        new Token(Token.Type.OPERATOR, ".", 1),
+                        new Token(Token.Type.IDENTIFIER, "toString", 2),
+                        new Token(Token.Type.OPERATOR, "(", 10),
+                        new Token(Token.Type.OPERATOR, ")", 11),
+                        new Token(Token.Type.OPERATOR, ";", 12)
+                )),
+                Arguments.of("Example 3", "token\n", Arrays.asList(
+                        new Token(Token.Type.IDENTIFIER, "token", 0)
+                )),
+                Arguments.of("Example 4", "one\btwo", Arrays.asList(
+                        new Token(Token.Type.IDENTIFIER, "one", 0),
+                        new Token(Token.Type.IDENTIFIER, "two", 4)
                 ))
         );
     }

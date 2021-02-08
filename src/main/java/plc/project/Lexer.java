@@ -58,13 +58,13 @@ public final class Lexer {
         if(peek("[A-Za-z_]")){
             return lexIdentifier();
         }
-        else if(peek("[\\+|\\-]") || peek("[0-9]")){
-            if(peek("[\\+|\\-]")){
-                match("[\\+|\\-]");
-                if(!peek("[0-9]")){
-                    return lexOperator();
-                }
-            }
+        else if(peek("[+\\-]","[0-9]") || peek("[0-9]")){
+//            if(peek("[+\\-]")){
+//                match("[+\\-]");
+//                if(!peek("[0-9]")){
+//                    return lexOperator();
+//                }
+//            }
             return lexNumber();
         }
         else if(peek("\'")){
