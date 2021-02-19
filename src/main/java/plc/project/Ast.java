@@ -15,7 +15,6 @@ public abstract class Ast {
 
         private final List<Field> fields;
         private final List<Method> methods;
-        private final double whathehell = 0;
 
         public Source(List<Field> fields, List<Method> methods) {
             this.fields = fields;
