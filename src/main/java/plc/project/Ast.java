@@ -8,13 +8,7 @@ import java.util.Optional;
  * See the Parser assignment specification for specific notes on each AST class
  * and how to use it.
  */
-//I have added the files for project 2
 
-    ///TODO: what the hell is going on
-
-    // ukhfuhsdhfjhdsfkjhd
-
-    //what the fuck
 public abstract class Ast {
 
     public static final class Source extends Ast {
