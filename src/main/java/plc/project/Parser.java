@@ -171,7 +171,13 @@ public final class Parser {
      * and advances the token stream.
      */
     private boolean match(Object... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in lecture)
+        boolean peek = peek(patterns);
+        if (peek) {
+            for(int i = 0 ; i < patterns.length;i++){
+                tokens.advance();
+            }
+        }
+        return peek;
     }
 
     private static final class TokenStream {
