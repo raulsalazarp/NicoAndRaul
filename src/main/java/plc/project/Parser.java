@@ -1,5 +1,7 @@
 package plc.project;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -139,7 +141,26 @@ public final class Parser {
      * Parses the {@code secondary-expression} rule.
      */
     public Ast.Expr parseSecondaryExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //throw new UnsupportedOperationException(); //TODO
+        int steps = 0;
+        //i think this whole thing is wrong
+//        while(tokens.has(1) && peek(".") == false){ //while theres a ting ahead of me
+//            tokens.advance();
+//            steps++;
+//        }
+//        //we know how many tokens between the beginning and the period
+//        if(peek(".")){ // the 2ndary expresssion has the parenthesis part
+//            for(int i = 0; i < steps; i++){
+//                tokens.goback();
+//            }
+//        }
+//        else if(peek(".") == false){
+//            for(int i = 0; i < steps; i++){
+//                tokens.goback();
+//            }
+//        }
+//        //how we're back wherer we started
+        return null;
     }
 
     /**
@@ -149,7 +170,91 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expr parsePrimaryExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+
+        //TODO: gotta handle the 'NIL' ting - thats the only thing missing
+
+        //TODO: i think we gotta do the [ '(' expression ')' ] and the last one too from the grammar
+
+        if(peek("TRUE")){
+            //match to advance
+            match("TRUE");
+            Boolean b = new Boolean(true);
+            //Ast.Expr.Literal x = new Ast.Expr.Literal(b);
+            return new Ast.Expr.Literal(b);
+        }
+        else if(peek("FALSE")){
+            match("FALSE");
+            Boolean b = new Boolean(false);
+            return new Ast.Expr.Literal(b);
+        }
+        else if(peek(Token.Type.INTEGER)){
+            int x = Integer.parseInt(tokens.get(0).getLiteral());
+            BigInteger i = BigInteger.valueOf(x);
+            match(Token.Type.INTEGER);
+            return new Ast.Expr.Literal(i);
+        }
+        else if(peek(Token.Type.DECIMAL)){
+            double x = Double.parseDouble(tokens.get(0).getLiteral());
+            BigDecimal i = BigDecimal.valueOf(x);
+            match(Token.Type.DECIMAL);
+            return new Ast.Expr.Literal(i);
+        }
+        else if(peek(Token.Type.CHARACTER)){
+            String c = tokens.get(0).getLiteral();
+            match(Token.Type.STRING);
+            //lets get rid of the (') tings at each end
+            c = c.substring(1);
+            c = c.substring(0,(c.length()-1));
+            //now lets handle converting the escapes
+            if(c.equals("\\\\b")){
+                c.replace("\\\\b","\b");
+            }
+            else if(c.equals("\\\\n")){
+                c.replace("\\\\n","\n");
+            }
+            else if(c.equals("\\\\r")){
+                c.replace("\\\\r","\r");
+            }
+            else if(c.equals("\\\\t")){
+                c.replace("\\\\t","\t");
+            }
+            else if(c.equals("\\\\\'")){
+                c.replace("\\\\\'","\'");
+            }
+            else if(c.equals("\\\\\"")){
+                c.replace("\\\\\"","\"");
+            }
+            else if(c.equals("\\\\\\\\")){
+                c.replace("\\\\\\\\","\\");
+            }
+
+            Character cc = new Character(c.charAt(0));
+            return new Ast.Expr.Literal(cc);
+        }
+        else if(peek(Token.Type.STRING)){
+            String c = tokens.get(0).getLiteral();
+            match(Token.Type.STRING);
+            c = c.substring(1);
+            c = c.substring(0,(c.length()-1));
+            // " at begining and end have been removed
+            c.replace("\\\\b","\b");
+            c.replace("\\\\n","\n");
+            c.replace("\\\\r","\r");
+            c.replace("\\\\t","\t");
+            c.replace("\\\\\'","\'");
+            c.replace("\\\\\"","\"");
+            c.replace("\\\\\\\\","\\");
+            //now we have taken care of the escaped tings
+            return new Ast.Expr.Literal(c);
+        }
+        //now the recursive tings
+        else if(peek("(")){
+
+        }
+        else if(peek(Token.Type.IDENTIFIER)){
+
+        }
+        return null;
     }
 
     /**
@@ -228,6 +333,7 @@ public final class Parser {
         public void advance() {
             index++;
         }
+        public void goback() { index--; }
 
     }
 
