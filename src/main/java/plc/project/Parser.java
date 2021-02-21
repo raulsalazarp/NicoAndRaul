@@ -2,7 +2,11 @@ package plc.project;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import static java.util.Optional.empty;
 
 /**
  * The parser takes the sequence of tokens emitted by the lexer and turns that
@@ -29,7 +33,17 @@ public final class Parser {
      * Parses the {@code source} rule.
      */
     public Ast.Source parseSource() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //we need list of fields and list of methods
+        List<Ast.Field> fields = new ArrayList<>();
+        List<Ast.Method> methods = new ArrayList<>();
+        while(peek("LET")){
+            fields.add(parseField());
+        }
+        while(peek("DEF")){
+            methods.add(parseMethod());
+        }
+        return new Ast.Source(fields,methods);
+
     }
 
     /**
@@ -37,7 +51,22 @@ public final class Parser {
      * next tokens start a field, aka {@code LET}.
      */
     public Ast.Field parseField() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //we need string name and Optional<Expr> value;
+        if(match("LET")){
+            if(peek(Token.Type.IDENTIFIER)){
+                String name = tokens.get(0).getLiteral();
+                if(match("=")){
+                    Ast.Expr value = parseExpression();
+                    if(match(";")){
+                        return new Ast.Field(name, Optional.of(value));
+                    }
+                }
+                else if(match(";")){
+                    return new Ast.Field(name, empty());
+                }
+            }
+        }
+        throw new ParseException("Error: something went wrong in field", tokens.index);
     }
 
     /**
@@ -45,7 +74,48 @@ public final class Parser {
      * next tokens start a method, aka {@code DEF}.
      */
     public Ast.Method parseMethod() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+    //we need string name list of strings parameters and list of statements
+        if(peek("DEF")){
+            match("DEF");
+            List<String> params = new ArrayList<>();
+            List<Ast.Stmt> stats = new ArrayList<>();
+            if(peek(Token.Type.IDENTIFIER)){
+                String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                if(match("(")){
+                    if(peek(Token.Type.IDENTIFIER)){
+                        String temp = tokens.get(0).getLiteral();
+                        params.add(temp);
+                        match(Token.Type.IDENTIFIER);
+                        while(match(",")){
+                            if(peek(Token.Type.IDENTIFIER)){
+                                temp = tokens.get(0).getLiteral();
+                                params.add(temp);
+                                match(Token.Type.IDENTIFIER);
+                            }
+                            else{
+                                throw new ParseException("Error: not an identifier", tokens.index);
+                            }
+
+                        }
+                        if(match(")")){
+                            if(match("DO")){
+                                while(peek("END") == false){
+                                    Ast.Stmt s = parseStatement();
+                                    stats.add(s);
+                                    tokens.advance();
+                                }
+                                if(peek("END")) {
+                                    match("END");
+                                    return new Ast.Method(name, params, stats);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        throw new ParseException("Error: the formatting for method is wrong", tokens.index);
     }
 
     /**
@@ -54,7 +124,29 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Stmt parseStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //delegate the work and then deal with the assignment and expression tings
+        if(peek("LET"))
+            return parseDeclarationStatement();
+        else if(peek("IF"))
+            return parseIfStatement();
+        else if(peek("FOR"))
+            return parseForStatement();
+        else if(peek("WHILE"))
+            return parseWhileStatement();
+        else if(peek("RETURN"))
+            return parseReturnStatement();
+        else{
+            Ast.Expr x = parseExpression();
+            if(match(";")){
+                return new Ast.Stmt.Expression(x);
+            }
+            else if(match("=")){
+                Ast.Expr xx = parseExpression();
+                if(match(";"))
+                    return new Ast.Stmt.Assignment(x,xx);
+            }
+        }
+        throw new ParseException("Error: parseStatement couldnt delegate the work correctly", tokens.index);
     }
 
     /**
@@ -63,7 +155,22 @@ public final class Parser {
      * statement, aka {@code LET}.
      */
     public Ast.Stmt.Declaration parseDeclarationStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //we need string name and optional expr value
+        if(match("LET")){
+            if(peek(Token.Type.IDENTIFIER)) {
+                String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                if (match("=")) {
+                    Ast.Expr value = parseExpression();
+                    if (match(";"))
+                        return new Ast.Stmt.Declaration(name, Optional.of(value));
+                } else if (match(";")) {
+                    return new Ast.Stmt.Declaration(name, empty());
+                }
+            }
+
+        }
+        throw new ParseException("Error: sum wrong widdit", tokens.index);
     }
 
     /**
@@ -72,7 +179,35 @@ public final class Parser {
      * {@code IF}.
      */
     public Ast.Stmt.If parseIfStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //we need expr condition and list of thenstmts and list of elsestmts
+        if(match("IF")){
+            Ast.Expr condition = parseExpression();
+            List<Ast.Stmt> thenstats = new ArrayList<>();
+            List<Ast.Stmt> elsestats = new ArrayList<>();
+            if(match("DO")){
+                while(peek("ELSE") == false && peek("END") == false){
+                    Ast.Stmt s = parseStatement();
+                    thenstats.add(s);
+                }
+                if(peek("ELSE")){
+                    match("ELSE");
+                    while(peek("END") == false){
+                        Ast.Stmt ss = parseStatement();
+                        elsestats.add(ss);
+                    }
+                    if(match("END")){
+                        return new Ast.Stmt.If(condition, thenstats, elsestats);
+                    }
+                }
+                else if(match("END")){
+                    return new Ast.Stmt.If(condition, thenstats, elsestats);
+                }
+            }
+            else{
+                throw new ParseException("Error: no 'DO' present", tokens.index);
+            }
+        }
+        return null;
     }
 
     /**
@@ -81,7 +216,40 @@ public final class Parser {
      * {@code FOR}.
      */
     public Ast.Stmt.For parseForStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //we need String name, Expr value and list of statements
+        if(match("FOR")){
+            if(peek(Token.Type.IDENTIFIER)){
+                String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                if(match("IN")){
+                    Ast.Expr value = parseExpression();
+                    List<Ast.Stmt> list = new ArrayList<>();
+                    if(match("DO")){
+                        while(peek("END") == false){ //this could be an infinite loop is END never there ??
+                            //but if there is no end we believe it will break when
+                            // we try to parseStmt something that aint a stmt
+                            Ast.Stmt s = parseStatement();
+                            list.add(s);
+                            tokens.advance();
+                        }
+                        if(peek("END")) {
+                            match("END");
+                            return new Ast.Stmt.For(name, value, list);
+                        }
+                    }
+                    else{
+                        throw new ParseException("Error: no 'DO' present", tokens.index);
+                    }
+                }
+                else{
+                    throw new ParseException("Error: no 'IN' present", tokens.index);
+                }
+            }
+            else{
+                throw new ParseException("Error: no identifier present", tokens.index);
+            }
+        }
+        return null;
     }
 
     /**
@@ -90,7 +258,27 @@ public final class Parser {
      * {@code WHILE}.
      */
     public Ast.Stmt.While parseWhileStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //throw new UnsupportedOperationException(); //TODO
+        //we need Expr condition and List<stmt> list
+        if(match("WHILE")){
+            Ast.Expr condition = parseExpression();
+            List<Ast.Stmt> list = new ArrayList<>();
+            if(match("DO")){
+                while(peek("END") == false){ //this could be an infinite loop is END never there ??
+                    //but if there is no end we believe it will break when
+                    // we try to parseStmt something that aint a stmt
+                    Ast.Stmt s = parseStatement();
+                    list.add(s);
+                    tokens.advance();
+                }
+                if(peek("END")) {
+                    match("END");
+                    return new Ast.Stmt.While(condition, list);
+                }
+            }
+            throw new ParseException("Error: missing the DO or END in the while", tokens.index);
+        }
+        return null;
     }
 
     /**
@@ -99,68 +287,142 @@ public final class Parser {
      * {@code RETURN}.
      */
     public Ast.Stmt.Return parseReturnStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //throw new UnsupportedOperationException(); //TODO
+        if(match("RETURN")){
+            Ast.Expr x = parseExpression();
+            return new Ast.Stmt.Return(x);
+        }
+        throw new ParseException("Error: something in return statement went wrong", tokens.index);
     }
 
     /**
      * Parses the {@code expression} rule.
      */
     public Ast.Expr parseExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        return parseLogicalExpression();
     }
 
     /**
      * Parses the {@code logical-expression} rule.
      */
     public Ast.Expr parseLogicalExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr a = parseEqualityExpression();
+        if(peek("AND") || peek("OR")){
+            String operator = tokens.get(0).getLiteral();
+
+            if(operator.equals("AND"))
+                match("AND");
+            else if(operator.equals("OR"))
+                match("OR");
+            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseLogicalExpression());
+
+            return res;
+        }
+        else{
+            return a;
+        }
     }
 
     /**
      * Parses the {@code equality-expression} rule.
      */
     public Ast.Expr parseEqualityExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //binary
+        Ast.Expr a = parseAdditiveExpression();
+        if(peek("<") || peek("<=") || peek(">") || peek(">=") || peek("==") || peek("!=")){
+            String operator = tokens.get(0).getLiteral();
+
+            if(operator.equals("<"))
+                match("<");
+            else if(operator.equals("<="))
+                match("<=");
+            else if(operator.equals(">"))
+                match(">");
+            else if(operator.equals(">="))
+                match(">=");
+            else if(operator.equals("=="))
+                match("==");
+            else if(operator.equals("!="))
+                match("!=");
+            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseEqualityExpression());
+
+            return res;
+        }
+        else{
+            return a;
+        }
     }
 
     /**
      * Parses the {@code additive-expression} rule.
      */
-    public Ast.Expr parseAdditiveExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+    public Ast.Expr parseAdditiveExpression() throws ParseException { //same as multiplicative
+        Ast.Expr a = parseMultiplicativeExpression();
+        if(peek("+") || peek("-")){
+            String operator = tokens.get(0).getLiteral();
+
+            if(operator.equals("+"))
+                match("+");
+            else if(operator.equals("-"))
+                match("-");
+            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseAdditiveExpression());
+
+            return res;
+        }
+        else{
+            return a;
+        }
     }
 
     /**
      * Parses the {@code multiplicative-expression} rule.
      */
     public Ast.Expr parseMultiplicativeExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        //returning binary ting
+        Ast.Expr a = parseSecondaryExpression();
+        if(peek("*") || peek("/")){
+            String operator = tokens.get(0).getLiteral();
+
+            if(operator.equals("*"))
+                match("*");
+            else if(operator.equals("/"))
+                match("/");
+            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseMultiplicativeExpression());
+
+            return res;
+        }
+        else{
+            return a;
+        }
     }
 
     /**
      * Parses the {@code secondary-expression} rule.
      */
-    public Ast.Expr parseSecondaryExpression() throws ParseException {
-        //throw new UnsupportedOperationException(); //TODO
-        int steps = 0;
-        //i think this whole thing is wrong
-//        while(tokens.has(1) && peek(".") == false){ //while theres a ting ahead of me
-//            tokens.advance();
-//            steps++;
-//        }
-//        //we know how many tokens between the beginning and the period
-//        if(peek(".")){ // the 2ndary expresssion has the parenthesis part
-//            for(int i = 0; i < steps; i++){
-//                tokens.goback();
-//            }
-//        }
-//        else if(peek(".") == false){
-//            for(int i = 0; i < steps; i++){
-//                tokens.goback();
-//            }
-//        }
-//        //how we're back wherer we started
+    public Ast.Expr parseSecondaryExpression() throws ParseException { //FINISHED ?
+
+        //NEW ATTEMPT
+        Ast.Expr receiver = parsePrimaryExpression();
+        if(peek(".")){
+            Ast.Expr px;
+            while(peek(".")){//we know we have the 2nd part of the secondary ting
+                match(".");
+                if(match(Token.Type.IDENTIFIER) == false){
+                    throw new ParseException("Error: missing identifier after period", tokens.index);
+                }
+                px = parsePrimaryExpression();
+
+            }
+            //return function
+            Ast.Expr.Function f = null;//new Ast.Expr.Function(receiver, name,list); //ask in OH
+
+        }
+        else{
+            return receiver;
+        }
+
         return null;
+
     }
 
     /**
@@ -252,7 +514,30 @@ public final class Parser {
 
         }
         else if(peek(Token.Type.IDENTIFIER)){
-
+            String name = tokens.get(0).getLiteral();
+            match(Token.Type.IDENTIFIER);
+            List<Ast.Expr> list = new ArrayList<Ast.Expr>();
+            if(peek("(",")")){
+                match("(",")");
+            }
+            else if(peek("(")){//theres stuff inside the parameters
+                match("(");
+                Ast.Expr x = parseExpression();
+                list.add(x);
+                while(peek(",")){
+                    match(",");
+                    x = parseExpression();
+                    list.add(x);
+                }
+                if(peek(")")){
+                    match(")");
+                }
+                else{
+                    throw new ParseException("Error(169): No closing bracket in nested comma ting or subsequent expressions", tokens.index);
+                }
+            }
+            Ast.Expr.Function f = new Ast.Expr.Function(empty(),name,list); //ask in OH
+            return f;
         }
         return null;
     }
