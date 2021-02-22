@@ -55,6 +55,7 @@ public final class Parser {
         if(match("LET")){
             if(peek(Token.Type.IDENTIFIER)){
                 String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
                 if(match("=")){
                     Ast.Expr value = parseExpression();
                     if(match(";")){
@@ -100,7 +101,7 @@ public final class Parser {
                         }
                         if(match(")")){
                             if(match("DO")){
-                                while(peek("END") == false){
+                                while(peek("END") == false){ //check if theres tokens left
                                     Ast.Stmt s = parseStatement();
                                     stats.add(s);
                                     tokens.advance();
