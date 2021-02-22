@@ -103,6 +103,7 @@ public final class Parser {
                             if(match("DO")){
                                 while(peek("END") == false){ //check if theres tokens left
                                     Ast.Stmt s = parseStatement();
+                                    match(";");
                                     stats.add(s);
                                     tokens.advance();
                                 }
