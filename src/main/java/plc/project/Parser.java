@@ -416,7 +416,6 @@ public final class Parser {
             }
             //return function
             Ast.Expr.Function f = null;//new Ast.Expr.Function(receiver, name,list); //ask in OH
-
         }
         else{
             return receiver;
@@ -537,7 +536,7 @@ public final class Parser {
                     throw new ParseException("Error(169): No closing bracket in nested comma ting or subsequent expressions", tokens.index);
                 }
             }
-            Ast.Expr.Function f = new Ast.Expr.Function(empty(),name,list); //ask in OH
+            Ast.Expr.Access f = new Ast.Expr.Access(empty(),name); //ask in OH
             return f;
         }
         return null;
