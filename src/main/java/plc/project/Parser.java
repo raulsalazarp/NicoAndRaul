@@ -99,21 +99,20 @@ public final class Parser {
                             }
 
                         }
-                        if(match(")")){
-                            if(match("DO")){
-                                while(peek("END") == false){ //check if theres tokens left
-                                    Ast.Stmt s = parseStatement();
-                                    match(";");
-                                    stats.add(s);
-                                    tokens.advance();
-                                }
-                                if(peek("END")) {
-                                    match("END");
-                                    return new Ast.Method(name, params, stats);
-                                }
+                    }
+                    if(match(")")){
+                        if(match("DO")){
+                            while(match("END") == false){ //check if theres tokens left
+                                Ast.Stmt s = parseStatement();
+                                //match(";");
+                                stats.add(s);
+                                //tokens.advance();
                             }
+                            return new Ast.Method(name, params, stats);
+
                         }
                     }
+
                 }
             }
         }
@@ -227,17 +226,15 @@ public final class Parser {
                     Ast.Expr value = parseExpression();
                     List<Ast.Stmt> list = new ArrayList<>();
                     if(match("DO")){
-                        while(peek("END") == false){ //this could be an infinite loop is END never there ??
+                        while(match("END") == false){ //this could be an infinite loop is END never there ??
                             //but if there is no end we believe it will break when
                             // we try to parseStmt something that aint a stmt
                             Ast.Stmt s = parseStatement();
                             list.add(s);
-                            tokens.advance();
+                            //tokens.advance();
                         }
-                        if(peek("END")) {
-                            match("END");
-                            return new Ast.Stmt.For(name, value, list);
-                        }
+                        return new Ast.Stmt.For(name, value, list);
+
                     }
                     else{
                         throw new ParseException("Error: no 'DO' present", tokens.index);
@@ -271,7 +268,7 @@ public final class Parser {
                     // we try to parseStmt something that aint a stmt
                     Ast.Stmt s = parseStatement();
                     list.add(s);
-                    tokens.advance();
+                    //tokens.advance();
                 }
                 if(peek("END")) {
                     match("END");
@@ -404,26 +401,42 @@ public final class Parser {
     public Ast.Expr parseSecondaryExpression() throws ParseException { //FINISHED ?
 
         //NEW ATTEMPT
-        Ast.Expr receiver = parsePrimaryExpression();
-        if(peek(".")){
-            Ast.Expr px;
-            while(peek(".")){//we know we have the 2nd part of the secondary ting
-                match(".");
-                if(match(Token.Type.IDENTIFIER) == false){
-                    throw new ParseException("Error: missing identifier after period", tokens.index);
+        Ast.Expr result = parsePrimaryExpression();
+        String name;
+        List<Ast.Expr> list;
+        while(match(".")){
+            Ast.Expr receiver = result;
+            if(peek(Token.Type.IDENTIFIER)){
+                name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                list = new ArrayList<Ast.Expr>();
+                if(peek("(") == false){
+                    result = new Ast.Expr.Access(Optional.of(receiver),name);
                 }
-                px = parsePrimaryExpression();
-
+                else if(peek("(",")")){
+                    match("(",")");
+                    result = new Ast.Expr.Function(Optional.of(receiver),name,list);
+                }
+                else if(peek("(")){//theres stuff inside the parameters
+                    match("(");
+                    Ast.Expr x = parseExpression();
+                    list.add(x);
+                    while(peek(",")){
+                        match(",");
+                        x = parseExpression();
+                        list.add(x);
+                    }
+                    if(peek(")")){
+                        match(")");
+                        result = new Ast.Expr.Function(Optional.of(receiver),name,list);
+                    }
+                    else{
+                        throw new ParseException("Error(169): No closing bracket in nested comma ting or subsequent expressions", tokens.index);
+                    }
+                }
             }
-            //return function
-            Ast.Expr.Function f = null;//new Ast.Expr.Function(receiver, name,list); //ask in OH
         }
-        else{
-            return receiver;
-        }
-
-        return null;
-
+        return result;
     }
 
     /**
@@ -469,27 +482,13 @@ public final class Parser {
             c = c.substring(1);
             c = c.substring(0,(c.length()-1));
             //now lets handle converting the escapes
-            if(c.equals("\\\\b")){
-                c.replace("\\\\b","\b");
-            }
-            else if(c.equals("\\\\n")){
-                c.replace("\\\\n","\n");
-            }
-            else if(c.equals("\\\\r")){
-                c.replace("\\\\r","\r");
-            }
-            else if(c.equals("\\\\t")){
-                c.replace("\\\\t","\t");
-            }
-            else if(c.equals("\\\\\'")){
-                c.replace("\\\\\'","\'");
-            }
-            else if(c.equals("\\\\\"")){
-                c.replace("\\\\\"","\"");
-            }
-            else if(c.equals("\\\\\\\\")){
-                c.replace("\\\\\\\\","\\");
-            }
+            c =c.replace("\\b","\b");
+            c =c.replace("\\n","\n");
+            c =c.replace("\\r","\r");
+            c =c.replace("\\t","\t");
+            c =c.replace("\\\'","\'");
+            c =c.replace("\\\"","\"");
+            c =c.replace("\\\\","\\");
 
             Character cc = new Character(c.charAt(0));
             return new Ast.Expr.Literal(cc);
@@ -497,28 +496,41 @@ public final class Parser {
         else if(peek(Token.Type.STRING)){
             String c = tokens.get(0).getLiteral();
             match(Token.Type.STRING);
+            System.out.println(c);
             c = c.substring(1);
             c = c.substring(0,(c.length()-1));
             // " at begining and end have been removed
-            c.replace("\\\\b","\b");
-            c.replace("\\\\n","\n");
-            c.replace("\\\\r","\r");
-            c.replace("\\\\t","\t");
-            c.replace("\\\\\'","\'");
-            c.replace("\\\\\"","\"");
-            c.replace("\\\\\\\\","\\");
+
+            c = c.replace("\\b","\b");
+            c =c.replace("\\n","\n");
+            c =c.replace("\\r","\r");
+            c =c.replace("\\t","\t");
+            c =c.replace("\\\'","\'");
+            c =c.replace("\\\"","\"");
+            c =c.replace("\\\\","\\");
             //now we have taken care of the escaped tings
+            System.out.println(c);
             return new Ast.Expr.Literal(c);
         }
         //now the recursive tings
         else if(peek("(")){
-
+            match("(");
+            Ast.Expr x = parseExpression();
+            if(match(")")){
+                return new Ast.Expr.Group(x);
+            }
+            else{
+                throw new ParseException("Error: missing the closing ting", tokens.index);
+            }
         }
         else if(peek(Token.Type.IDENTIFIER)){
             String name = tokens.get(0).getLiteral();
             match(Token.Type.IDENTIFIER);
             List<Ast.Expr> list = new ArrayList<Ast.Expr>();
-            if(peek("(",")")){
+            if(peek("(") == false){
+                return new Ast.Expr.Access(empty(), name);
+            }
+            else if(peek("(",")")){
                 match("(",")");
             }
             else if(peek("(")){//theres stuff inside the parameters
@@ -537,8 +549,7 @@ public final class Parser {
                     throw new ParseException("Error(169): No closing bracket in nested comma ting or subsequent expressions", tokens.index);
                 }
             }
-            Ast.Expr.Access f = new Ast.Expr.Access(empty(),name); //ask in OH
-            return f;
+            return new Ast.Expr.Function(empty(),name,list);
         }
         return null;
     }
