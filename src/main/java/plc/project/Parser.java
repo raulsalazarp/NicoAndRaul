@@ -551,7 +551,10 @@ public final class Parser {
             }
             return new Ast.Expr.Function(empty(),name,list);
         }
-        return null;
+        else if(peek(null)){ // how do we do this
+            return null;
+        }
+        throw new ParseException("Error: no handle-able ting found", tokens.index);
     }
 
     /**
