@@ -42,6 +42,8 @@ public final class Parser {
         while(peek("DEF")){
             methods.add(parseMethod());
         }
+        if(peek("LET"))
+            throw new ParseException("Error: there is a field after a method", tokens.index);
         return new Ast.Source(fields,methods);
 
     }
@@ -304,33 +306,39 @@ public final class Parser {
     /**
      * Parses the {@code logical-expression} rule.
      */
-    public Ast.Expr parseLogicalExpression() throws ParseException {
-        Ast.Expr a = parseEqualityExpression();
+    //helper function
+    public Ast.Expr parseLogicalExpressionHelper(Ast.Expr left) throws ParseException {
+        Ast.Expr.Binary newleft;
         if(peek("AND") || peek("OR")){
             String operator = tokens.get(0).getLiteral();
-
             if(operator.equals("AND"))
                 match("AND");
             else if(operator.equals("OR"))
                 match("OR");
-            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseLogicalExpression());
+            Ast.Expr right = parseEqualityExpression();
+            newleft = new Ast.Expr.Binary(operator, left, right);
+            if(peek("AND") || peek("OR")){
+                return parseLogicalExpressionHelper(newleft);
+            }
+            else{
+                return newleft;
+            }
+        }
+        return left;
 
-            return res;
-        }
-        else{
-            return a;
-        }
+    }
+
+    public Ast.Expr parseLogicalExpression() throws ParseException {
+        Ast.Expr left = parseEqualityExpression();
+        return parseLogicalExpressionHelper(left);
     }
 
     /**
      * Parses the {@code equality-expression} rule.
      */
-    public Ast.Expr parseEqualityExpression() throws ParseException {
-        //binary
-        Ast.Expr a = parseAdditiveExpression();
+    public Ast.Expr parseEqualityExpressionHelper(Ast.Expr left) throws ParseException {
         if(peek("<") || peek("<=") || peek(">") || peek(">=") || peek("==") || peek("!=")){
             String operator = tokens.get(0).getLiteral();
-
             if(operator.equals("<"))
                 match("<");
             else if(operator.equals("<="))
@@ -343,18 +351,31 @@ public final class Parser {
                 match("==");
             else if(operator.equals("!="))
                 match("!=");
-            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseEqualityExpression());
+            Ast.Expr right = parseAdditiveExpression();
+            Ast.Expr.Binary newleft = new Ast.Expr.Binary(operator, left, right);
+            if(peek("<") || peek("<=") || peek(">") || peek(">=") || peek("==") || peek("!=")){
+                return parseEqualityExpressionHelper(newleft);
+            }
+            else
+                return newleft;
+        }
+        return left;
 
-            return res;
-        }
-        else{
-            return a;
-        }
+    }
+    public Ast.Expr parseEqualityExpression() throws ParseException {
+        //binary
+        Ast.Expr left = parseAdditiveExpression();
+        return parseEqualityExpressionHelper(left);
+
     }
 
     /**
      * Parses the {@code additive-expression} rule.
      */
+//    public Ast.Expr parseAdditiveExpressionHelper() throws ParseException{
+//
+//    }
+
     public Ast.Expr parseAdditiveExpression() throws ParseException { //same as multiplicative
         Ast.Expr a = parseMultiplicativeExpression();
         if(peek("+") || peek("-")){
@@ -435,6 +456,9 @@ public final class Parser {
                     }
                 }
             }
+            else{
+                throw new ParseException("Error: there is no identifier after the period", tokens.index);
+            }
         }
         return result;
     }
@@ -451,7 +475,11 @@ public final class Parser {
 
         //TODO: i think we gotta do the [ '(' expression ')' ] and the last one too from the grammar
 
-        if(peek("TRUE")){
+        if(peek("NIL")){
+            match("NIL");
+            return new Ast.Expr.Literal(null);
+        }
+        else if(peek("TRUE")){
             //match to advance
             match("TRUE");
             Boolean b = new Boolean(true);
@@ -551,9 +579,7 @@ public final class Parser {
             }
             return new Ast.Expr.Function(empty(),name,list);
         }
-        else if(peek(null)){ // how do we do this
-            return null;
-        }
+
         throw new ParseException("Error: no handle-able ting found", tokens.index);
     }
 
@@ -638,3 +664,17 @@ public final class Parser {
     }
 
 }
+
+//ready to submit
+/*
+    ParserTests (51/56):
+        Priority (1/3):
+        And Or: Incorrect result, received Ast.Expr.Binary{operator=\'AND\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'OR\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
+        Equals Not Equals: Incorrect result, received Ast.Expr.Binary{operator=\'==\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'!=\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
+        Error (1/1):
+        Missing Closing Parenthesis: Incorrect index, received 2.
+        Invalid Closing Parenthesis: Incorrect index, received 2.
+        Missing DO: Incorrect index, received 2.
+        Invalid DO: Incorrect index, received 2.
+
+ */
