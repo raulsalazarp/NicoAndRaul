@@ -674,12 +674,9 @@ public final class Parser {
 
 }
 
-//ready to submit
+
 /*
     ParserTests (51/56):
-        Priority (1/3):
-        And Or: Incorrect result, received Ast.Expr.Binary{operator=\'AND\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'OR\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
-        Equals Not Equals: Incorrect result, received Ast.Expr.Binary{operator=\'==\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'!=\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
         Error (1/1):
         Missing Closing Parenthesis: Incorrect index, received 2.
         Invalid Closing Parenthesis: Incorrect index, received 2.
