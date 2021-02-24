@@ -372,55 +372,64 @@ public final class Parser {
     /**
      * Parses the {@code additive-expression} rule.
      */
-//    public Ast.Expr parseAdditiveExpressionHelper() throws ParseException{
-//
-//    }
-
-    public Ast.Expr parseAdditiveExpression() throws ParseException { //same as multiplicative
-        Ast.Expr a = parseMultiplicativeExpression();
+    public Ast.Expr parseAdditiveExpressionHelper(Ast.Expr left) throws ParseException{
+        Ast.Expr.Binary newleft;
         if(peek("+") || peek("-")){
             String operator = tokens.get(0).getLiteral();
-
             if(operator.equals("+"))
                 match("+");
             else if(operator.equals("-"))
                 match("-");
-            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseAdditiveExpression());
+            Ast.Expr right = parseMultiplicativeExpression();
+            newleft = new Ast.Expr.Binary(operator, left, right);
+            if(peek("+") || peek("-")){
+                return parseAdditiveExpressionHelper(newleft);
+            }
+            else{
+                return newleft;
+            }
+        }
+        return left;
+    }
 
-            return res;
-        }
-        else{
-            return a;
-        }
+    public Ast.Expr parseAdditiveExpression() throws ParseException { //same as multiplicative
+        Ast.Expr left = parseMultiplicativeExpression();
+        return parseAdditiveExpressionHelper(left);
     }
 
     /**
      * Parses the {@code multiplicative-expression} rule.
      */
-    public Ast.Expr parseMultiplicativeExpression() throws ParseException {
-        //returning binary ting
-        Ast.Expr a = parseSecondaryExpression();
+    public Ast.Expr parseMultiplicativeExpressionHelper(Ast.Expr left) throws ParseException{
+        Ast.Expr.Binary newleft;
         if(peek("*") || peek("/")){
             String operator = tokens.get(0).getLiteral();
-
             if(operator.equals("*"))
                 match("*");
             else if(operator.equals("/"))
                 match("/");
-            Ast.Expr.Binary res = new Ast.Expr.Binary(operator, a, parseMultiplicativeExpression());
+            Ast.Expr right = parseSecondaryExpression();
+            newleft = new Ast.Expr.Binary(operator, left, right);
+            if(peek("*") || peek("/")){
+                return parseMultiplicativeExpressionHelper(newleft);
+            }
+            else{
+                return newleft;
+            }
+        }
+        return left;
+    }
 
-            return res;
-        }
-        else{
-            return a;
-        }
+    public Ast.Expr parseMultiplicativeExpression() throws ParseException {
+        //returning binary ting
+        Ast.Expr left = parseSecondaryExpression();
+        return parseMultiplicativeExpressionHelper(left);
     }
 
     /**
      * Parses the {@code secondary-expression} rule.
      */
     public Ast.Expr parseSecondaryExpression() throws ParseException { //FINISHED ?
-
         //NEW ATTEMPT
         Ast.Expr result = parsePrimaryExpression();
         String name;
