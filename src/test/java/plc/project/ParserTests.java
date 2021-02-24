@@ -378,6 +378,21 @@ final class ParserTests {
                                 new Ast.Expr.Access(Optional.empty(), "expr2")
                         )
                 ),
+                Arguments.of("Addition Multiplication",
+                        Arrays.asList(
+                                //expr1 AND expr2
+                                new Token(Token.Type.IDENTIFIER, "expr1", 0),
+                                new Token(Token.Type.IDENTIFIER, "AND", 6),
+                                new Token(Token.Type.IDENTIFIER, "expr2", 10),
+                                new Token(Token.Type.IDENTIFIER, "OR", 16),
+                                new Token(Token.Type.IDENTIFIER, "expr3", 19)
+
+                        ),
+                        new Ast.Expr.Binary("OR",
+                                new Ast.Expr.Binary("AND",new Ast.Expr.Access(Optional.empty(), "expr1"), new Ast.Expr.Access(Optional.empty(), "expr2")),
+                                new Ast.Expr.Access(Optional.empty(), "expr3")
+                        )
+                ),
                 Arguments.of("Binary Multiplication",
                         Arrays.asList(
                                 //expr1 * expr2
@@ -539,6 +554,49 @@ final class ParserTests {
                 ))
         ));
         test(input, expected, Parser::parseSource);
+    }
+    @Test
+    void testExample2() {
+        List<Token> input = Arrays.asList(
+                /* LET first = 1;
+                 * DEF main() DO
+                 *     WHILE first != 10 DO
+                 *         print(first);
+                 *         first = first + 1;
+                 *     END
+                 * END
+                 */
+                //LET first = 1;
+                new Token(Token.Type.IDENTIFIER, "IF", 0),
+                new Token(Token.Type.IDENTIFIER, "cond", 3)//,
+                //new Token(Token.Type.IDENTIFIER, "THEN", 8)
+        );
+        Ast.Source expected = new Ast.Source(
+                Arrays.asList(new Ast.Field("first", Optional.of(new Ast.Expr.Literal(BigInteger.ONE)))),
+                Arrays.asList(new Ast.Method("main", Arrays.asList(), Arrays.asList(
+                        new Ast.Stmt.While(
+                                new Ast.Expr.Binary("!=",
+                                        new Ast.Expr.Access(Optional.empty(), "first"),
+                                        new Ast.Expr.Literal(BigInteger.TEN)
+                                ),
+                                Arrays.asList(
+                                        new Ast.Stmt.Expression(
+                                                new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
+                                                        new Ast.Expr.Access(Optional.empty(), "first"))
+                                                )
+                                        ),
+                                        new Ast.Stmt.Assignment(
+                                                new Ast.Expr.Access(Optional.empty(), "first"),
+                                                new Ast.Expr.Binary("+",
+                                                        new Ast.Expr.Access(Optional.empty(), "first"),
+                                                        new Ast.Expr.Literal(BigInteger.ONE)
+                                                )
+                                        )
+                                )
+                        )
+                        ))
+                ));
+        test(input, expected, Parser::parseStatement);
     }
 
     /**
