@@ -40,19 +40,16 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Expression ast) {
-        throw new UnsupportedOperationException(); //TODO
-    }
 
-    @Override
-    public Environment.PlcObject visit(Ast.Stmt.Declaration ast) {
-        //(given in lecture)
-        if( ast.getValue().isPresent() ){
-            scope.defineVariable(ast.getName(), visit(ast.getValue().get()));
-        }else{
-            scope.defineVariable(ast.getName(),Environment.NIL);
-        }
+        //throw new UnsupportedOperationException(); //TODO
+
+        //how to evaluate the expression ??
+        Ast.Stmt.Expr tobeeval = ast.getExpression();
+
         return Environment.NIL;
     }
+
+
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Assignment ast) {
@@ -66,6 +63,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.For ast) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
         throw new UnsupportedOperationException(); //TODO
     }
 
@@ -84,20 +86,31 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         return Environment.NIL;
     }
-
     @Override
-    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
-        throw new UnsupportedOperationException(); //TODO
+    public Environment.PlcObject visit(Ast.Stmt.Declaration ast) {
+        //(given in lecture)
+        if( ast.getValue().isPresent() ){
+            scope.defineVariable(ast.getName(), visit(ast.getValue().get()));
+        }else{
+            scope.defineVariable(ast.getName(),Environment.NIL);
+        }
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Literal ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        if(ast.getLiteral() != null)
+            return Environment.create(ast.getLiteral());
+        else
+            return Environment.NIL;
+
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Group ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        return visit(ast.getExpression());
     }
 
     @Override
