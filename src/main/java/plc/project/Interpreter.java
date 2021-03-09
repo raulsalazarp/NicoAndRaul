@@ -64,7 +64,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Stmt.If ast) {
 
-        //throw new UnsupportedOperationException(); //TODO
+        throw new UnsupportedOperationException(); //TODO
         /*
         private final Expr condition;
             private final List<Stmt> thenStatements;
