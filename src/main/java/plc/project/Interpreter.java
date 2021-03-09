@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
@@ -50,6 +51,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     }
 
 
+    @Override
+    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
+        throw new UnsupportedOperationException(); //TODO
+    }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Assignment ast) {
@@ -58,22 +63,42 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.If ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        //throw new UnsupportedOperationException(); //TODO
+        /*
+        private final Expr condition;
+            private final List<Stmt> thenStatements;
+            private final List<Stmt> elseStatements;*/
+
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.For ast) {
-        throw new UnsupportedOperationException(); //TODO
+
+        /*private final String name;
+            private final Expr value;
+            private final List<Stmt> statements;*/
+
+        for( Object x : requireType(Iterable.class, visit(ast.getValue()))){
+            try{
+                scope = new Scope(scope);
+                for(Ast.Stmt stmt : ast.getStatements()){
+                    visit(stmt);
+                }
+            }
+            finally {
+                scope = scope.getParent();
+            }
+        }
+        return Environment.NIL;
     }
 
-    @Override
-    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
-        throw new UnsupportedOperationException(); //TODO
-    }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.While ast) {
         //(given in lecture)
+        /*private final Expr condition;
+            private final List<Stmt> statements;*/
         while( requireType(Boolean.class, visit(ast.getCondition() ) ) ){
             try{
                 scope = new Scope(scope);
@@ -125,7 +150,22 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Function ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if(ast.getReceiver().isPresent()) {
+            ArrayList<Environment.PlcObject> ting = new ArrayList<>();
+            for(int i = 0; i < ast.getArguments().size(); i++){
+                ting.add(visit(ast.getArguments().get(i)));
+            }
+            return visit(ast.getReceiver().get()).callMethod(ast.getName(),ting);
+        }
+        else{
+            ArrayList<Environment.PlcObject> ting = new ArrayList<>();
+            for(int i = 0; i < ast.getArguments().size(); i++){
+                ting.add(visit(ast.getArguments().get(i)));
+            }
+            Environment.Function x = scope.lookupFunction(ast.getName(),ast.getArguments().size());
+            return x.invoke(ting);
+
+        }
     }
 
     /**
