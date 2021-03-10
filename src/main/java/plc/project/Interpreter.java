@@ -79,7 +79,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         private final Expr condition;
             private final List<Stmt> thenStatements;
             private final List<Stmt> elseStatements;*/
-        if(requireType(Boolean.class, visit(ast.getCondition() ) ) ){
+        if(requireType(Boolean.class, visit(ast.getCondition()))){
             try{
                 scope = new Scope(scope);
                 for(Ast.Stmt stmt : ast.getThenStatements()){
