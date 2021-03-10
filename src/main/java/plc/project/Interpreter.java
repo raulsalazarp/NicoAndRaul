@@ -61,14 +61,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 visit(((Ast.Expr.Access) ast.getReceiver()).getReceiver().get()).setField(ast.getReceiver().toString(),visit(ast.getValue()));
             }
             else{
-                scope.lookupVariable(ast.getReceiver().toString());
-                //what does it mean to set a variable in the current scope
-                //defineVariable function??
+                scope.lookupVariable(ast.getReceiver().toString()).setValue(visit(ast.getValue()));
             }
         }
-        //do we return an error message if ast.reicever != access
         return Environment.NIL;
-
     }
 
     @Override
