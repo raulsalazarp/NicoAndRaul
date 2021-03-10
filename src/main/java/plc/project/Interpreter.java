@@ -46,10 +46,15 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         return Environment.NIL;
     }
 
-
     @Override
-    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
-        throw new UnsupportedOperationException(); //TODO
+    public Environment.PlcObject visit(Ast.Expr.Access ast) {
+        //TODO
+        if(ast.getReceiver().isPresent()){
+            return visit(ast.getReceiver().get()).getField(ast.getName()).getValue();
+        }
+        else{
+            return scope.lookupVariable(ast.getName()).getValue();
+        }
     }
 
     @Override
@@ -69,12 +74,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.If ast) {
-
-        //throw new UnsupportedOperationException(); //TODO
-        /*
-        private final Expr condition;
-            private final List<Stmt> thenStatements;
-            private final List<Stmt> elseStatements;*/
+        //TODO
         if(requireType(Boolean.class, visit(ast.getCondition()))){
             try{
                 scope = new Scope(scope);
@@ -104,9 +104,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Stmt.For ast) {
 
-        /*private final String name;
-            private final Expr value;
-            private final List<Stmt> statements;*/
         Iterable<Environment.PlcObject> ting = requireType(Iterable.class , visit(ast.getValue()));
 
         for(Environment.PlcObject x : ting){
@@ -128,8 +125,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Stmt.While ast) {
         //(given in lecture)
-        /*private final Expr condition;
-            private final List<Stmt> statements;*/
         while( requireType(Boolean.class, visit(ast.getCondition() ) ) ){
             try{
                 scope = new Scope(scope);
@@ -156,28 +151,27 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Literal ast) {
-
         if(ast.getLiteral() != null)
             return Environment.create(ast.getLiteral());
         else
             return Environment.NIL;
-
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Group ast) {
-
         return visit(ast.getExpression());
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Binary ast) {
-        throw new UnsupportedOperationException(); //TODO
-    }
+        if(ast.getOperator().equals("AND") || ast.getOperator().equals("OR")){
+            if(requireType(Boolean.class, visit(ast.getLeft()))){
+                if(ast.getOperator().equals("OR")){
 
-    @Override
-    public Environment.PlcObject visit(Ast.Expr.Access ast) {
-        throw new UnsupportedOperationException(); //TODO
+                }
+            }
+        }
+        return Environment.NIL;
     }
 
     @Override
@@ -197,6 +191,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             Environment.Function x = scope.lookupFunction(ast.getName(),ast.getArguments().size());
             return x.invoke(ting);
         }
+    }
+
+    @Override
+    public Environment.PlcObject visit(Ast.Stmt.Return ast) {
+        throw new Return(visit(ast.getValue()));
     }
 
     /**
