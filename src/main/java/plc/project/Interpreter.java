@@ -41,12 +41,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Expression ast) {
-
-        //throw new UnsupportedOperationException(); //TODO
-
-        //how to evaluate the expression ??
-        Ast.Stmt.Expr tobeeval = ast.getExpression();
-
+        //TODO
+        visit(ast.getExpression());
         return Environment.NIL;
     }
 
@@ -58,7 +54,21 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Assignment ast) {
-        throw new UnsupportedOperationException(); //TODO
+        //TODO
+        //check if receiver is of type access
+        if(ast.getReceiver() instanceof Ast.Expr.Access){
+            if(((Ast.Expr.Access) ast.getReceiver()).getReceiver().isPresent()){
+                visit(((Ast.Expr.Access) ast.getReceiver()).getReceiver().get()).setField(ast.getReceiver().toString(),visit(ast.getValue()));
+            }
+            else{
+                scope.lookupVariable(ast.getReceiver().toString());
+                //what does it mean to set a variable in the current scope
+                //defineVariable function??
+            }
+        }
+        //do we return an error message if ast.reicever != access
+        return Environment.NIL;
+
     }
 
     @Override
@@ -101,10 +111,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         /*private final String name;
             private final Expr value;
             private final List<Stmt> statements;*/
+        Iterable<Environment.PlcObject> ting = requireType(Iterable.class , visit(ast.getValue()));
 
-        for( Object x : requireType(Iterable.class, visit(ast.getValue()))){
+        for(Environment.PlcObject x : ting){
             try{
                 scope = new Scope(scope);
+                scope.defineVariable(ast.getName(),x);
                 for(Ast.Stmt stmt : ast.getStatements()){
                     visit(stmt);
                 }
@@ -134,6 +146,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         return Environment.NIL;
     }
+
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Declaration ast) {
         //(given in lecture)
@@ -187,7 +200,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
             Environment.Function x = scope.lookupFunction(ast.getName(),ast.getArguments().size());
             return x.invoke(ting);
-
         }
     }
 
