@@ -248,8 +248,22 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 //                right = ((Ast.Expr.Access) ast.getRight()).getName();
 //                String x = left+right;
 //                return new Environment.PlcObject(scope, x);
-                Environment.Variable left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName());
-                Environment.Variable right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName());
+                Environment.PlcObject left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName()).getValue();
+                Environment.PlcObject right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName()).getValue();
+                if((left).getValue() instanceof String || (right).getValue() instanceof String){
+                    String x = ((String)left.getValue())+((String)right.getValue());
+                    return new Environment.PlcObject(scope, x);
+                }
+                else if((left).getValue() instanceof BigInteger || (right).getValue() instanceof BigInteger){
+                    BigInteger x = ((BigInteger)left.getValue()).add((BigInteger)right.getValue());
+                    return new Environment.PlcObject(scope,x);
+                }
+                else if((left).getValue() instanceof BigDecimal || (right).getValue() instanceof BigDecimal){
+                    BigDecimal x = ((BigDecimal)left.getValue()).add((BigDecimal)right.getValue());
+                    return new Environment.PlcObject(scope,x);
+                }
+
+
 
             }
             else{
