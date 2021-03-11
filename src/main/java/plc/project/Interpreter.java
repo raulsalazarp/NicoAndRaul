@@ -241,13 +241,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         //the plus sign
         else if(ast.getOperator().equals("+")){
-//            String left = "";
-//            String right = "";
             if(ast.getLeft() instanceof Ast.Expr.Access && ast.getRight() instanceof Ast.Expr.Access){
-//                left = ((Ast.Expr.Access) ast.getLeft()).getName();
-//                right = ((Ast.Expr.Access) ast.getRight()).getName();
-//                String x = left+right;
-//                return new Environment.PlcObject(scope, x);
                 Environment.PlcObject left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName()).getValue();
                 Environment.PlcObject right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName()).getValue();
                 if((left).getValue() instanceof String || (right).getValue() instanceof String){
@@ -262,9 +256,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                     BigDecimal x = ((BigDecimal)left.getValue()).add((BigDecimal)right.getValue());
                     return new Environment.PlcObject(scope,x);
                 }
-
-
-
             }
             else{
                 //if either is a string but not access
