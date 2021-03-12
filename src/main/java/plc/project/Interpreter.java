@@ -27,11 +27,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Source ast) {
-        //throw new UnsupportedOperationException();
-        /*
-        private final List<Field> fields;
-        private final List<Method> methods;
-        * */
         for(Ast.Field f : ast.getFields()){
             visit(f);
         }
@@ -41,16 +36,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         Environment.Function res = scope.lookupFunction("main",0);
         List<Environment.PlcObject> list = new ArrayList<>();
         return res.invoke(list);
-
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Field ast) {
-        //throw new UnsupportedOperationException();
-        /*
-        private final String name;
-        private final Optional<Expr> value;
-        * */
         if(ast.getValue().isPresent()){
             scope.defineVariable(ast.getName(), visit(ast.getValue().get()));
         }
@@ -58,56 +47,51 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             scope.defineVariable(ast.getName(), Environment.NIL);
         }
         return Environment.NIL;
-
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Method ast) {
-        throw new UnsupportedOperationException();
-        /*
-        * private final String name;
-        private final List<String> parameters;
-        private final List<Stmt> statements;*/
-        /*
-        scope.defineFunction("print", 1, args -> {
-            System.out.println(args.get(0).getValue());
-            return Environment.NIL;
+        Scope temp = scope;
+        scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
+            //this is the callback function
+            //begin callback function
+            scope = new Scope(temp);
+            int i = 0;
+            for(String s : ast.getParameters()){
+                scope.defineVariable(s, args.get(i));
+                i++;
+            }
+            //evaluate the methods statements
+            Return tempret;
+            Environment.PlcObject x = null;
+            for(Ast.Stmt s : ast.getStatements()){
+                if((s) instanceof Ast.Stmt.Return){
+                    try{
+                        visit(s);
+                    } catch(Return ret){
+                        x = ret.value;
+                    }
+                    break;
+                }
+                else{
+                    x = Environment.NIL;
+                }
+            }
+            scope = scope.getParent(); //done defining variables?
+            return x;
+            //end callback function
         });
-        * */
-//        scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
-//
-//            return (Environment.PlcObject)ast.getStatements();
-//
-//        });
-//        //the lambda has to return the execution and invoke is what executes the function
-//        //takes a list of arguments and returns a single value
-//
-//        //begin callback function
-//        scope = new Scope(scope);
-//        for(String s : ast.getParameters()){
-//            scope.defineVariable(s, visit(s)); //??define vars for args using param names??
-//        }
-//
-//        //evaluate the methods statements
-//        for(Ast.Stmt s : ast.getStatements()){
-//            visit(s);
-//        }
-//
-//
-//        scope = scope.getParent();
-//        //end callback function
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Expression ast) {
-        //TODO
         visit(ast.getExpression());
         return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Access ast) {
-        //TODO
         if(ast.getReceiver().isPresent()){
             return visit(ast.getReceiver().get()).getField(ast.getName()).getValue();
         }
@@ -118,11 +102,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Assignment ast) {
-        //TODO
         //check if receiver is of type access
         if(ast.getReceiver() instanceof Ast.Expr.Access){
             if(((Ast.Expr.Access) ast.getReceiver()).getReceiver().isPresent()){
-                visit(((Ast.Expr.Access) ast.getReceiver()).getReceiver().get()).setField(ast.getReceiver().toString(),visit(ast.getValue()));
+                visit(((Ast.Expr.Access)ast.getReceiver()).getReceiver().get()).setField(((Ast.Expr.Access) ast.getReceiver()).getName(),visit(ast.getValue()));
             }
             else{
                 scope.lookupVariable(((Ast.Expr.Access) ast.getReceiver()).getName()).setValue(visit(ast.getValue()));
@@ -175,7 +158,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         return Environment.NIL;
     }
-
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.While ast) {
@@ -305,7 +287,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             Object left = getBinLeft(ast.getLeft());
             Object right = getBinRight(ast.getRight());
             if(left instanceof Comparable && right instanceof Comparable){
-                System.out.println("JUST CHECKING");
                 int compres = (((Comparable<Object>)left).compareTo(right)); //compres = comparison result
                 if(ast.getOperator().equals("<")){
                     if(compres == -1){ //right greater than left
@@ -365,9 +346,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
         }
         //the plus sign
-
         else if(ast.getOperator().equals("+")){
-
             Object left = getBinLeft(ast.getLeft());
             Object right = getBinRight(ast.getRight());
             if(left instanceof String || right instanceof String){
@@ -382,38 +361,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 BigDecimal x = ((BigDecimal)left).add((BigDecimal)right);
                 return new Environment.PlcObject(scope,x);
             }
-
-//            if(ast.getLeft() instanceof Ast.Expr.Access && ast.getRight() instanceof Ast.Expr.Access){ //is it access
-//                Environment.PlcObject left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName()).getValue();
-//                Environment.PlcObject right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName()).getValue();
-//                if((left).getValue() instanceof String || (right).getValue() instanceof String){
-//                    String x = ((String)left)+((String)right);
-//                    return new Environment.PlcObject(scope, x);
-//                }
-//                else if((left).getValue() instanceof BigInteger || (right).getValue() instanceof BigInteger){
-//                    BigInteger x = ((BigInteger)left).add((BigInteger)right);
-//                    return new Environment.PlcObject(scope,x);
-//                }
-//                else if((left).getValue() instanceof BigDecimal || (right).getValue() instanceof BigDecimal){
-//                    BigDecimal x = ((BigDecimal)left.getValue()).add((BigDecimal)right.getValue());
-//                    return new Environment.PlcObject(scope,x);
-//                }
-//            }
-//            else{//if either is a string but not access
-//                if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof String || ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof String ){
-//                    //concatenate the strings
-//                    String x = ((String)(((Ast.Expr.Literal)ast.getLeft()).getLiteral()))+((String)(((Ast.Expr.Literal)ast.getRight()).getLiteral()));
-//                    return new Environment.PlcObject(scope, x);
-//                }
-//                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
-//                    BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
-//                    return new Environment.PlcObject(scope,x);
-//                }
-//                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
-//                    BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
-//                    return new Environment.PlcObject(scope,x);
-//                }
-//            }
             throw new RuntimeException("Error: the BigInteger/BigDecimal types are mismatched for ast.left and ast.right");
         }
         else if(ast.getOperator().equals("-") || ast.getOperator().equals("*")){
@@ -522,3 +469,5 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     }
 
 }
+
+//ready for test submission
