@@ -27,17 +27,75 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Source ast) {
-        throw new UnsupportedOperationException(); //TODO
+        //throw new UnsupportedOperationException();
+        /*
+        private final List<Field> fields;
+        private final List<Method> methods;
+        * */
+        for(Ast.Field f : ast.getFields()){
+            visit(f);
+        }
+        for(Ast.Method m : ast.getMethods()){
+            visit(m);
+        }
+        Environment.Function res = scope.lookupFunction("main",0);
+        List<Environment.PlcObject> list = new ArrayList<>();
+        return res.invoke(list);
+
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Field ast) {
-        throw new UnsupportedOperationException(); //TODO
+        //throw new UnsupportedOperationException();
+        /*
+        private final String name;
+        private final Optional<Expr> value;
+        * */
+        if(ast.getValue().isPresent()){
+            scope.defineVariable(ast.getName(), visit(ast.getValue().get()));
+        }
+        else{
+            scope.defineVariable(ast.getName(), Environment.NIL);
+        }
+        return Environment.NIL;
+
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Method ast) {
-        throw new UnsupportedOperationException(); //TODO
+        throw new UnsupportedOperationException();
+        /*
+        * private final String name;
+        private final List<String> parameters;
+        private final List<Stmt> statements;*/
+        /*
+        scope.defineFunction("print", 1, args -> {
+            System.out.println(args.get(0).getValue());
+            return Environment.NIL;
+        });
+        * */
+//        scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
+//
+//            return (Environment.PlcObject)ast.getStatements();
+//
+//        });
+//        //the lambda has to return the execution and invoke is what executes the function
+//        //takes a list of arguments and returns a single value
+//
+//        //begin callback function
+//        scope = new Scope(scope);
+//        for(String s : ast.getParameters()){
+//            scope.defineVariable(s, visit(s)); //??define vars for args using param names??
+//        }
+//
+//        //evaluate the methods statements
+//        for(Ast.Stmt s : ast.getStatements()){
+//            visit(s);
+//        }
+//
+//
+//        scope = scope.getParent();
+//        //end callback function
     }
 
     @Override
@@ -159,29 +217,96 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         return visit(ast.getExpression());
     }
 
+    public Object getBinLeft(Ast.Expr left){
+        Object leftObj = null;
+        if(left instanceof Ast.Expr.Access){
+            Environment.PlcObject leftleft = scope.lookupVariable(((Ast.Expr.Access) left).getName()).getValue();
+            if((leftleft).getValue() instanceof String){
+                String x = ((String)leftleft.getValue());
+                leftObj = x;
+            }
+            else if((leftleft).getValue() instanceof BigInteger){
+                BigInteger x = ((BigInteger)leftleft.getValue());
+                leftObj = x;
+            }
+            else if((leftleft).getValue() instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)leftleft.getValue());
+                leftObj = x;
+            }
+        }
+        else{ //if not access
+            if(((Ast.Expr.Literal)left).getLiteral() instanceof String){
+                String x = ((String)(((Ast.Expr.Literal)left).getLiteral()));
+                leftObj = x;
+            }
+            else if(((Ast.Expr.Literal)left).getLiteral() instanceof BigInteger){
+                BigInteger x = ((BigInteger)(((Ast.Expr.Literal)left).getLiteral()));
+                leftObj = x;
+            }
+            else if(((Ast.Expr.Literal)left).getLiteral() instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)left).getLiteral()));
+                leftObj = x;
+            }
+        }
+        return leftObj;
+    }
+
+    public Object getBinRight(Ast.Expr right){
+        Object rightObj = null;
+        if(right instanceof Ast.Expr.Access){
+            Environment.PlcObject rightright = scope.lookupVariable(((Ast.Expr.Access) right).getName()).getValue();
+            if((rightright).getValue() instanceof String){
+                String x = ((String)rightright.getValue());
+                rightObj = x;
+            }
+            else if((rightright).getValue() instanceof BigInteger){
+                BigInteger x = ((BigInteger)rightright.getValue());
+                rightObj = x;
+            }
+            else if((rightright).getValue() instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)rightright.getValue());
+                rightObj = x;
+            }
+        }
+        else{ //if not access
+            if(((Ast.Expr.Literal)right).getLiteral() instanceof String){
+                String x = ((String)(((Ast.Expr.Literal)right).getLiteral()));
+                rightObj = x;
+            }
+            else if(((Ast.Expr.Literal)right).getLiteral() instanceof BigInteger){
+                BigInteger x = ((BigInteger)(((Ast.Expr.Literal)right).getLiteral()));
+                rightObj = x;
+            }
+            else if(((Ast.Expr.Literal)right).getLiteral() instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)right).getLiteral()));
+                rightObj = x;
+            }
+        }
+        return rightObj;
+    }
     @Override
     public Environment.PlcObject visit(Ast.Expr.Binary ast) {
         //AND or OR
         if(ast.getOperator().equals("AND") || ast.getOperator().equals("OR")){
-            if(requireType(Boolean.class, visit(ast.getLeft()))){
-                if(ast.getOperator().equals("OR")){
+            if(ast.getOperator().equals("OR")) {
+                if (requireType(Boolean.class, visit(ast.getLeft())) || requireType(Boolean.class, visit(ast.getRight()))) {
                     return new Environment.PlcObject(scope, Boolean.TRUE);
-                    //return boolean value wrapped around a plc object
-                }
-                else if(ast.getOperator().equals("AND")){
-                    if(requireType(Boolean.class, visit(ast.getRight()))){
-                        return new Environment.PlcObject(scope, Boolean.TRUE);
-                    }
                 }
             }
-            else{
-                return new Environment.PlcObject(scope, Boolean.FALSE);
+            else if(ast.getOperator().equals("AND")) {
+                if (requireType(Boolean.class, visit(ast.getLeft())) && requireType(Boolean.class, visit(ast.getRight()))) {
+                    return new Environment.PlcObject(scope, Boolean.TRUE);
+                }
             }
+            return new Environment.PlcObject(scope, Boolean.FALSE);
         }
         //comparisons
         else if(ast.getOperator().equals("<") || ast.getOperator().equals("<=") || ast.getOperator().equals(">") || ast.getOperator().equals(">=")){
-            if((Comparable.class.isInstance((ast.getLeft()))) && (Comparable.class.isInstance((ast.getRight())))){
-                int compres = (((Comparable<Ast.Expr>)(ast.getLeft())).compareTo((ast.getRight()))); //compres = comparison result
+            Object left = getBinLeft(ast.getLeft());
+            Object right = getBinRight(ast.getRight());
+            if(left instanceof Comparable && right instanceof Comparable){
+                System.out.println("JUST CHECKING");
+                int compres = (((Comparable<Object>)left).compareTo(right)); //compres = comparison result
                 if(ast.getOperator().equals("<")){
                     if(compres == -1){ //right greater than left
                         //if confused about return type look at the interpreter tests
@@ -217,7 +342,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 }
             }
             else{
-                throw new RuntimeException("Error: Left and/or Right are not comparable");
+                throw new RuntimeException("Error: HERE IS THE ISSUE - Left and/or Right are not comparable");
             }
         }
         //equalities
@@ -240,49 +365,67 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
         }
         //the plus sign
+
         else if(ast.getOperator().equals("+")){
-            if(ast.getLeft() instanceof Ast.Expr.Access && ast.getRight() instanceof Ast.Expr.Access){
-                Environment.PlcObject left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName()).getValue();
-                Environment.PlcObject right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName()).getValue();
-                if((left).getValue() instanceof String || (right).getValue() instanceof String){
-                    String x = ((String)left.getValue())+((String)right.getValue());
-                    return new Environment.PlcObject(scope, x);
-                }
-                else if((left).getValue() instanceof BigInteger || (right).getValue() instanceof BigInteger){
-                    BigInteger x = ((BigInteger)left.getValue()).add((BigInteger)right.getValue());
-                    return new Environment.PlcObject(scope,x);
-                }
-                else if((left).getValue() instanceof BigDecimal || (right).getValue() instanceof BigDecimal){
-                    BigDecimal x = ((BigDecimal)left.getValue()).add((BigDecimal)right.getValue());
-                    return new Environment.PlcObject(scope,x);
-                }
+
+            Object left = getBinLeft(ast.getLeft());
+            Object right = getBinRight(ast.getRight());
+            if(left instanceof String || right instanceof String){
+                String x = ((String)left)+((String)right);
+                return new Environment.PlcObject(scope, x);
             }
-            else{
-                //if either is a string but not access
-                if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof String || ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof String ){
-                    //concatenate the strings
-                    String x = ((String)(((Ast.Expr.Literal)ast.getLeft()).getLiteral()))+((String)(((Ast.Expr.Literal)ast.getRight()).getLiteral()));
-                    return new Environment.PlcObject(scope, x);
-                }
-                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
-                    BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
-                    return new Environment.PlcObject(scope,x);
-                }
-                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
-                    BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
-                    return new Environment.PlcObject(scope,x);
-                }
+            else if(left instanceof BigInteger && right instanceof BigInteger){
+                BigInteger x = ((BigInteger)left).add((BigInteger)right);
+                return new Environment.PlcObject(scope,x);
             }
+            else if(left instanceof BigDecimal && right instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)left).add((BigDecimal)right);
+                return new Environment.PlcObject(scope,x);
+            }
+
+//            if(ast.getLeft() instanceof Ast.Expr.Access && ast.getRight() instanceof Ast.Expr.Access){ //is it access
+//                Environment.PlcObject left = scope.lookupVariable(((Ast.Expr.Access) ast.getLeft()).getName()).getValue();
+//                Environment.PlcObject right = scope.lookupVariable(((Ast.Expr.Access) ast.getRight()).getName()).getValue();
+//                if((left).getValue() instanceof String || (right).getValue() instanceof String){
+//                    String x = ((String)left)+((String)right);
+//                    return new Environment.PlcObject(scope, x);
+//                }
+//                else if((left).getValue() instanceof BigInteger || (right).getValue() instanceof BigInteger){
+//                    BigInteger x = ((BigInteger)left).add((BigInteger)right);
+//                    return new Environment.PlcObject(scope,x);
+//                }
+//                else if((left).getValue() instanceof BigDecimal || (right).getValue() instanceof BigDecimal){
+//                    BigDecimal x = ((BigDecimal)left.getValue()).add((BigDecimal)right.getValue());
+//                    return new Environment.PlcObject(scope,x);
+//                }
+//            }
+//            else{//if either is a string but not access
+//                if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof String || ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof String ){
+//                    //concatenate the strings
+//                    String x = ((String)(((Ast.Expr.Literal)ast.getLeft()).getLiteral()))+((String)(((Ast.Expr.Literal)ast.getRight()).getLiteral()));
+//                    return new Environment.PlcObject(scope, x);
+//                }
+//                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
+//                    BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+//                    return new Environment.PlcObject(scope,x);
+//                }
+//                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
+//                    BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).add(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+//                    return new Environment.PlcObject(scope,x);
+//                }
+//            }
             throw new RuntimeException("Error: the BigInteger/BigDecimal types are mismatched for ast.left and ast.right");
         }
         else if(ast.getOperator().equals("-") || ast.getOperator().equals("*")){
+            Object left = getBinLeft(ast.getLeft());
+            Object right = getBinRight(ast.getRight());
             if(ast.getOperator().equals("-")){
-                if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
-                    BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).subtract(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+                if(left instanceof BigInteger && right instanceof BigInteger){
+                    BigInteger x = ((BigInteger)(left)).subtract((BigInteger)right);
                     return new Environment.PlcObject(scope,x);
                 }
-                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
-                    BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).subtract(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+                else if(left instanceof BigDecimal && right instanceof BigDecimal){
+                    BigDecimal x = ((BigDecimal)(left)).subtract((BigDecimal)right);
                     return new Environment.PlcObject(scope,x);
                 }
                 else{
@@ -290,12 +433,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 }
             }
             else{
-                if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
-                    BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).multiply(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+                if(left instanceof BigInteger && right instanceof BigInteger){
+                    BigInteger x = ((BigInteger)(left)).multiply((BigInteger)right);
                     return new Environment.PlcObject(scope,x);
                 }
-                else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
-                    BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).multiply(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+                else if(left instanceof BigDecimal && right instanceof BigDecimal){
+                    BigDecimal x = ((BigDecimal)(left)).multiply((BigDecimal)right);
                     return new Environment.PlcObject(scope,x);
                 }
                 else{
@@ -304,19 +447,20 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
         }
         else if(ast.getOperator().equals("/")){
-            if(((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger && ((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())).compareTo(BigInteger.ZERO) == 0){
+            Object left = getBinLeft(ast.getLeft());
+            Object right = getBinRight(ast.getRight());
+            if(left instanceof BigInteger && ((BigInteger)left).compareTo(BigInteger.ZERO) == 0){
                 throw new RuntimeException("Error: denominator is zero");
             }
-            if(((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigDecimal && ((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())).compareTo(BigDecimal.ZERO) == 0){
+            if(left instanceof BigDecimal && ((BigDecimal)left).compareTo(BigDecimal.ZERO) == 0){
                 throw new RuntimeException("Error: denominator is zero");
             }
-            if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigInteger && ((Ast.Expr.Literal)ast.getRight()).getLiteral() instanceof BigInteger){
-                BigInteger x = ((BigInteger)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).divide(((BigInteger)(((Ast.Expr.Literal)ast.getRight()).getLiteral())));
+            if(left instanceof BigInteger && right instanceof BigInteger){
+                BigInteger x = ((BigInteger)left).divide((BigInteger)right);
                 return new Environment.PlcObject(scope,x);
             }
-            else if(((Ast.Expr.Literal)ast.getLeft()).getLiteral() instanceof BigDecimal && ((((Ast.Expr.Literal)ast.getRight()).getLiteral())) instanceof BigDecimal){
-                BigDecimal x = ((BigDecimal)(((Ast.Expr.Literal)ast.getLeft()).getLiteral())).divide(((BigDecimal)(((Ast.Expr.Literal)ast.getRight()).getLiteral())),1,BigDecimal.ROUND_HALF_EVEN);
-                //is two the correct number for this?? ask in OH
+            else if(left instanceof BigDecimal && right instanceof BigDecimal){
+                BigDecimal x = ((BigDecimal)left).divide(((BigDecimal)right),1,BigDecimal.ROUND_HALF_EVEN);
                 return new Environment.PlcObject(scope,x);
             }
             else{
@@ -325,7 +469,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         else{
             throw new RuntimeException("Error: something went wrong in binary method");
-            //this is how to throw errords
         }
         return Environment.NIL;
     }
