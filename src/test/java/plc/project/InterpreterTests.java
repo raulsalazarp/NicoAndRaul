@@ -389,6 +389,6 @@ final class InterpreterTests {
 
 InterpreterTests (36/38):
   Scope (0/2):
-    If Scope: Incorrect log, received
+    If Scope: Incorrect log, received ""
     Method Scope: Unexpected java.lang.ClassCastException (plc.project.Ast$Expr$Binary cannot be cast to plc.project.Ast$Expr$Literal)
  */

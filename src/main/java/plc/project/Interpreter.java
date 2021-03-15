@@ -55,6 +55,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         scope.defineFunction(ast.getName(), ast.getParameters().size(), args -> {
             //this is the callback function
             //begin callback function
+            Scope b4 = scope;
             scope = new Scope(temp);
             //Scope child = scope; //perhaps change all instances of scope inside lambda to child
             int i = 0;
@@ -70,7 +71,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 return ret.value;
             }
             finally {
-                scope = scope.getParent(); //done defining variables?
+                scope = b4;//scope.getParent(); //done defining variables?
             }
             //end callback function
         });
@@ -416,6 +417,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Expr.Function ast) {
         if(ast.getReceiver().isPresent()) {
+            System.out.println("theres a receiver");
             ArrayList<Environment.PlcObject> ting = new ArrayList<>();
             for(int i = 0; i < ast.getArguments().size(); i++){
                 ting.add(visit(ast.getArguments().get(i)));
