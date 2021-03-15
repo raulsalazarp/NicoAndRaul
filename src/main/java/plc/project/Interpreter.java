@@ -56,6 +56,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             //this is the callback function
             //begin callback function
             scope = new Scope(temp);
+            //Scope child = scope; //perhaps change all instances of scope inside lambda to child
             int i = 0;
             for(String s : ast.getParameters()){
                 scope.defineVariable(s, args.get(i));
