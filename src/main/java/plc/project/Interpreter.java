@@ -62,23 +62,15 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 i++;
             }
             //evaluate the methods statements
-            Return tempret;
-            Environment.PlcObject x = null;
-            for(Ast.Stmt s : ast.getStatements()){
-                if((s) instanceof Ast.Stmt.Return){
-                    try{
-                        visit(s);
-                    } catch(Return ret){
-                        x = ret.value;
-                    }
-                    break;
-                }
-                else{
-                    x = Environment.NIL;
-                }
+            try{
+                ast.getStatements().forEach(this::visit);
+                return Environment.NIL;
+            } catch(Return ret){
+                return ret.value;
             }
-            scope = scope.getParent(); //done defining variables?
-            return x;
+            finally {
+                scope = scope.getParent(); //done defining variables?
+            }
             //end callback function
         });
         return Environment.NIL;
@@ -469,5 +461,4 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     }
 
 }
-
 //ready for test submission
