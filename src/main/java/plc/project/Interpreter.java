@@ -260,6 +260,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         return rightObj;
     }
+
     @Override
     public Environment.PlcObject visit(Ast.Expr.Binary ast) {
         //AND or OR
@@ -280,6 +281,9 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         else if(ast.getOperator().equals("<") || ast.getOperator().equals("<=") || ast.getOperator().equals(">") || ast.getOperator().equals(">=")){
             Object left = getBinLeft(ast.getLeft());
             Object right = getBinRight(ast.getRight());
+            //TODO MUST VISIT LEFT AND RIGHT
+            //Environment.PlcObject left = visit(ast.getLeft());
+            //Environment.PlcObject right = visit(ast.getRight());
             if(left instanceof Comparable && right instanceof Comparable){
                 int compres = (((Comparable<Object>)left).compareTo(right)); //compres = comparison result
                 if(ast.getOperator().equals("<")){
@@ -323,7 +327,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         //equalities
         else if(ast.getOperator().equals("==") || ast.getOperator().equals("!=")){
             if(ast.getOperator().equals("==")){
-                if(ast.getLeft().equals(ast.getRight())){
+                if(visit(ast.getLeft()).equals(visit(ast.getRight()))){
                     return new Environment.PlcObject(scope, Boolean.TRUE);
                 }
                 else{
@@ -331,7 +335,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 }
             }
             else if(ast.getOperator().equals("!=")){
-                if(ast.getLeft().equals(ast.getRight()) == false){
+                if(visit(ast.getLeft()).equals(visit(ast.getRight())) == false){
                     return new Environment.PlcObject(scope, Boolean.TRUE);
                 }
                 else{
@@ -341,8 +345,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         }
         //the plus sign
         else if(ast.getOperator().equals("+")){
-            Object left = getBinLeft(ast.getLeft());
-            Object right = getBinRight(ast.getRight());
+            //Object left = getBinLeft(ast.getLeft());
+            //Object right = getBinRight(ast.getRight());
+            //TODO MUST VISIT LEFT AND RIGHT
+            Object left = visit(ast.getLeft());
+            Object right = visit(ast.getRight());
             if(left instanceof String || right instanceof String){
                 String x = ((String)left)+((String)right);
                 return new Environment.PlcObject(scope, x);
@@ -358,8 +365,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             throw new RuntimeException("Error: the BigInteger/BigDecimal types are mismatched for ast.left and ast.right");
         }
         else if(ast.getOperator().equals("-") || ast.getOperator().equals("*")){
-            Object left = getBinLeft(ast.getLeft());
-            Object right = getBinRight(ast.getRight());
+            //Object left = getBinLeft(ast.getLeft());
+            //Object right = getBinRight(ast.getRight());
+            //TODO MUST VISIT LEFT AND RIGHT
+            Object left = visit(ast.getLeft());
+            Object right = visit(ast.getRight());
             if(ast.getOperator().equals("-")){
                 if(left instanceof BigInteger && right instanceof BigInteger){
                     BigInteger x = ((BigInteger)(left)).subtract((BigInteger)right);
@@ -388,8 +398,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             }
         }
         else if(ast.getOperator().equals("/")){
-            Object left = getBinLeft(ast.getLeft());
-            Object right = getBinRight(ast.getRight());
+            //Object left = getBinLeft(ast.getLeft());
+            //Object right = getBinRight(ast.getRight());
+            //TODO MUST VISIT LEFT AND RIGHT
+            Object left = visit(ast.getLeft());
+            Object right = visit(ast.getRight());
             if(left instanceof BigInteger && ((BigInteger)left).compareTo(BigInteger.ZERO) == 0){
                 throw new RuntimeException("Error: denominator is zero");
             }
