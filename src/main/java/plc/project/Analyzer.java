@@ -53,17 +53,65 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
+
         throw new UnsupportedOperationException();  // TODO
     }
 
     @Override
     public Void visit(Ast.Stmt.If ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if(ast.getCondition().getType() != Environment.Type.BOOLEAN || ast.getThenStatements().size() == 0){
+            throw new RuntimeException("The if statement is invalid");
+        }
+        else{
+            //if(requireType(Boolean.class, visit(ast.getCondition()))){
+                try{
+                    scope = new Scope(scope);
+                    for(Ast.Stmt stmt : ast.getThenStatements()){
+                        visit(stmt);
+                    }
+                }
+                finally {
+                    scope = scope.getParent();
+                }
+           // }
+           // else{
+                try{
+                    scope = new Scope(scope);
+                    for(Ast.Stmt stmt : ast.getElseStatements()){
+                        visit(stmt);
+                    }
+                }
+                finally {
+                    scope = scope.getParent();
+                }
+            //}
+        }
+        return null;
+
     }
 
     @Override
     public Void visit(Ast.Stmt.For ast) {
-        throw new UnsupportedOperationException();  // TODO
+        if(ast.getValue().getType() != Environment.Type.INTEGER_ITERABLE || ast.getStatements().size() == 0){
+            throw new RuntimeException("The for statement is invalid");
+        }
+        else{
+            try{ //reused from Interpreter
+
+                //defineVariable(String name, String jvmName, Environment.Type type, Environment.PlcObject value) {
+
+                scope = new Scope(scope);
+
+                scope.defineVariable(ast.getName(), ast.getName(), Environment.Type.INTEGER, Environment.NIL);
+
+                for(Ast.Stmt stmt : ast.getStatements()){
+                    visit(stmt);
+                }
+            } finally {
+                scope = scope.getParent();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -182,7 +230,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     }
 
     @Override
-    public Void visit(Ast.Expr.Function ast) { //missing the validate step
+    public Void visit(Ast.Expr.Function ast) { //HOW DO WE DO THE RECEIVER STUFF
         //validate function expression
 
 
@@ -190,7 +238,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
         // of the expression to be the return type of the function
 
         if((ast.getReceiver().isPresent())){ //"the variable is a method of the receiver is present"
-            method.setFunction(ast.getFunction()); //?
+
+            //visit(ast.getReceiver().get()). setFunction(ast.getFunction()); //make sure types return types and stuff, make sure its valid
         }
         else if(!(ast.getReceiver().isPresent())){ //otherwise it is a function in the current scope.
 //            scope.defineFunction(ast.getName(), ast.getArguments().size()-1, args -> {
@@ -262,8 +311,9 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     //OH NOTES
     /*
-    ask about function ting - what they be meaning by 'validate'
+     - for WHILE, FOR< and IF, how do we know if the condition is true or has been met in order to go into the then or else statements (ex)
 
+     - for FUNCTION - wtf going on with that receiver bruh!
 
 
      */
