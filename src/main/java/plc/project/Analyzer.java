@@ -315,6 +315,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
      - for FUNCTION - wtf going on with that receiver bruh!
 
+ready for OH
 
      */
 
