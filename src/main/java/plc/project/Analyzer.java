@@ -62,6 +62,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Method ast) {
+
         Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {
             return Environment.NIL;
         });
@@ -84,28 +85,51 @@ public final class Analyzer implements Ast.Visitor<Void> {
         if(ast.getExpression() instanceof Ast.Expr.Function == false){
             throw new RuntimeException("Expression function's ast Expression is not an Ast.Expr.Function");
         }
+        visit(ast.getExpression());
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Declaration ast) {
-        if(ast.getValue().isPresent()){
-            try{
-                requireAssignable(ast.getVariable().getType(), ast.getValue().get().getType());
-            } catch(RuntimeException x){
-                throw new RuntimeException("Declaration function breaks in 'requireAssignable' line");
-            }
-            visit(ast.getValue().get());
-        }
+
         if(ast.getTypeName().isPresent()){
-            scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL);
+            if(ast.getValue().isPresent()){
+                visit(ast.getValue().get());
+                try{
+                    requireAssignable(Environment.getType(ast.getTypeName().get()), ast.getValue().get().getType());
+                } catch(RuntimeException x){
+                    throw new RuntimeException("Declaration function breaks in 'requireAssignable' line");
+                }
+            }
+            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL));
         }
-        else if(ast.getValue().isPresent()){
-            scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL);
+        else if (ast.getValue().isPresent()){
+            visit(ast.getValue().get());
+            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL));
         }
         else{
             throw new RuntimeException("Neither the variable's typeName or the Value are present.");
         }
+
+        /*if(ast.getValue().isPresent()){
+            visit(ast.getValue().get());
+            try{
+                requireAssignable(Environment.getType(ast.getTypeName().get()), ast.getValue().get().getType());
+            } catch(RuntimeException x){
+                throw new RuntimeException("Declaration function breaks in 'requireAssignable' line");
+            }
+        }
+        if(ast.getTypeName().isPresent()){
+            //scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL);
+            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL));
+        }
+        else if(ast.getValue().isPresent()){
+            //scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL);
+            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL));
+        }
+        else{
+            throw new RuntimeException("Neither the variable's typeName or the Value are present.");
+        }*/
         return null;
     }
 
@@ -125,8 +149,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.If ast) {
-        if(ast.getCondition().getType() != Environment.Type.BOOLEAN || ast.getThenStatements().size() == 0){
-            throw new RuntimeException("The if statement is invalid");
+        visit(ast.getCondition());
+        requireAssignable(Environment.Type.BOOLEAN,ast.getCondition().getType());
+
+        if(/*Environment.Type.BOOLEAN.equals(ast.getCondition().getType()) == false ||*/ ast.getThenStatements().size() == 0){
+            throw new RuntimeException("The then statement is DNE");
         }
         else{
             try{
@@ -138,22 +165,25 @@ public final class Analyzer implements Ast.Visitor<Void> {
             finally {
                 scope = scope.getParent();
             }
-            try{
-                scope = new Scope(scope);
-                for(Ast.Stmt stmt : ast.getElseStatements()){
-                    visit(stmt);
-                }
-            }
-            finally {
-                scope = scope.getParent();
+        }
+        try{
+            scope = new Scope(scope);
+            for(Ast.Stmt stmt : ast.getElseStatements()){
+                visit(stmt);
             }
         }
+        finally {
+            scope = scope.getParent();
+        }
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.For ast) {
-        if(ast.getValue().getType() != Environment.Type.INTEGER_ITERABLE || ast.getStatements().size() == 0){
+        visit(ast.getValue());
+        requireAssignable(Environment.Type.INTEGER_ITERABLE,ast.getValue().getType());
+        if(ast.getStatements().size() == 0){
             throw new RuntimeException("The for statement is invalid");
         }
         else{
@@ -172,18 +202,18 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.While ast) { //finished we think
-        if(ast.getCondition().getType() != Environment.Type.BOOLEAN)
-            throw new RuntimeException("The value is not of type boolean");
-        else{
-            try{ //reused from Interpreter
-                scope = new Scope(scope);
-                for(Ast.Stmt stmt : ast.getStatements()){
-                    visit(stmt);
-                }
-            } finally {
-                scope = scope.getParent();
+        visit(ast.getCondition());
+        requireAssignable(Environment.Type.BOOLEAN,ast.getCondition().getType());
+
+        try{ //reused from Interpreter
+            scope = new Scope(scope);
+            for(Ast.Stmt stmt : ast.getStatements()){
+                visit(stmt);
             }
+        } finally {
+            scope = scope.getParent();
         }
+
         return null;
     }
 
@@ -245,7 +275,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Binary ast) { //done?
-
+        visit(ast.getLeft());
+        visit(ast.getRight());
         //validates? binary expression - setting its type to appr. result type
         if(ast.getOperator().equals("AND") || ast.getOperator().equals("OR")){
             requireAssignable(Environment.Type.BOOLEAN, ast.getLeft().getType());
@@ -264,6 +295,9 @@ public final class Analyzer implements Ast.Visitor<Void> {
                 if(ast.getLeft().getType().equals(ast.getRight().getType())){
                     ast.setType(ast.getLeft().getType());
                 }
+                else{
+                    throw new RuntimeException("The '+' section is going wrong");
+                }
             }
             else{
                 throw new RuntimeException("The '+' section is going wrong");
@@ -273,6 +307,9 @@ public final class Analyzer implements Ast.Visitor<Void> {
             if(ast.getLeft().getType().equals(Environment.Type.INTEGER) || ast.getLeft().getType().equals(Environment.Type.DECIMAL)){
                 if(ast.getLeft().getType().equals(ast.getRight().getType())){
                     ast.setType(ast.getLeft().getType());
+                }
+                else{
+                    throw new RuntimeException("The '-' & '*' & '/' section is going wrong");
                 }
             }
             else{
@@ -355,16 +392,15 @@ public final class Analyzer implements Ast.Visitor<Void> {
 //        if(!(target.equals(Environment.Type.COMPARABLE) && type.equals(Environment.Type.COMPARABLE)) && !(target.equals(Environment.Type.ANY)) && !(target.equals(type))){
 //            throw new RuntimeException("Error: Not Assignable");
 //        }
-
-        if(target.equals(Environment.Type.COMPARABLE)){
+        if(target.equals(type)){
+            return;
+        }
+        else if(target.equals(Environment.Type.COMPARABLE)){
             if(type.equals(Environment.Type.INTEGER) || type.equals(Environment.Type.DECIMAL) || type.equals(Environment.Type.CHARACTER) || type.equals(Environment.Type.STRING)){
                 return;
             }
         }
         else if(target.equals(Environment.Type.ANY)){
-            return;
-        }
-        else if(target.equals(type)){
             return;
         }
         else{
@@ -374,8 +410,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     //OH NOTES
     /*
-     - ask aboyt RETURN's use of the method field
-
+     - valid condition different expected output
+     - invalid statement not throwing an exception but why would it throw exception
      */
 
 }
