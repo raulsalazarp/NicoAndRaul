@@ -410,6 +410,9 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
     }
     /* test sub feedback
+
+    //almost ready for second sub
+
     - check if INteger and Decimal in Literal are correct
     */
 }
