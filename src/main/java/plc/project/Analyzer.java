@@ -74,6 +74,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         //old *cannot lookup function in scope if you haven't defined it yet
         /*Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {return Environment.NIL;});*/
         //new
+
         List<Environment.Type> ptypes = new ArrayList<Environment.Type>();
         for(int i = 0; i < ast.getParameterTypeNames().size();i++){
             Environment.Type x = Environment.getType(ast.getParameterTypeNames().get(i));
@@ -101,7 +102,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Expression ast) {
-        if(ast.getExpression() instanceof Ast.Expr.Function == false){
+        if(!(ast.getExpression() instanceof Ast.Expr.Function)){
             throw new RuntimeException("Expression function's ast Expression is not an Ast.Expr.Function");
         }
         visit(ast.getExpression());
@@ -151,8 +152,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     public Void visit(Ast.Stmt.If ast) {
         visit(ast.getCondition());
         requireAssignable(Environment.Type.BOOLEAN,ast.getCondition().getType());
-
-        if(/*Environment.Type.BOOLEAN.equals(ast.getCondition().getType()) == false ||*/ ast.getThenStatements().size() == 0){
+        if(ast.getThenStatements().size() == 0){
             throw new RuntimeException("The then statement is DNE");
         }
         else{
@@ -220,6 +220,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Stmt.Return ast) {
 
+        visit(ast.getValue()); //because we are getting the type later
         try{
             requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
         } catch(RuntimeException x){
@@ -232,7 +233,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Expr.Literal ast) { //GOTTA FIX THIS
         //explicitly set TYPE of each literal to get rid of the initial NULL value
-        if(ast.getLiteral() == Environment.NIL){
+        if(ast.getLiteral().equals(Environment.NIL)){
             ast.setType(Environment.Type.NIL);
         }
         else if(ast.getLiteral() instanceof Boolean){
@@ -244,17 +245,20 @@ public final class Analyzer implements Ast.Visitor<Void> {
         else if(ast.getLiteral() instanceof String){
             ast.setType(Environment.Type.STRING);
         }
-        else if(ast.getLiteral() instanceof BigInteger){ //BIG PROBLEM - FIX THIS
-            BigInteger x = new BigInteger(Integer.MAX_VALUE+"");
-            if(((BigInteger)ast.getLiteral()).compareTo(x) == 1){ //research Java BigInteger class to check it against values
-                throw new RuntimeException("Integer is bigger than the 32-bit signed integer max value");
+        else if(ast.getLiteral() instanceof BigInteger){
+            //reference: https://stackoverflow.com/questions/50588328/how-to-check-a-number-is-out-of-the-range-of-integer-type
+            BigInteger val = new BigInteger(""+ast.getLiteral());
+            BigInteger max = new BigInteger(String.valueOf(Integer.MAX_VALUE));
+            BigInteger min = new BigInteger(String.valueOf(Integer.MIN_VALUE));
+            if(val.compareTo(max) > 0 || val.compareTo(min) < 0){ //research Java BigInteger class to check it against values
+                throw new RuntimeException("Integer is bigger/smaller than the 32-bit signed integer max/min value");
             }
             ast.setType(Environment.Type.INTEGER);
         }
         else if(ast.getLiteral() instanceof BigDecimal){
-            BigDecimal x = new BigDecimal(Double.MAX_VALUE+"");
-            if(((BigDecimal)ast.getLiteral()).compareTo(x) == 1){
-                throw new RuntimeException("Decimal is bigger than the 64-bit signed float max value");
+            BigDecimal x = new BigDecimal(""+ast.getLiteral());
+            if((x.doubleValue()) == (Double.POSITIVE_INFINITY) || (x.doubleValue()) == (Double.NEGATIVE_INFINITY)){
+                throw new RuntimeException("Decimal is bigger/smaller than the 32-bit signed integer max/min value");
             }
             ast.setType(Environment.Type.DECIMAL);
         }
@@ -296,7 +300,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
                     ast.setType(ast.getLeft().getType());
                 }
                 else{
-                    throw new RuntimeException("The '+' section is going wrong");
+                    throw new RuntimeException("The '+' section is going wrong - inside the INTEGER/DECIMAL sub-section");
                 }
             }
             else{
@@ -309,7 +313,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
                     ast.setType(ast.getLeft().getType());
                 }
                 else{
-                    throw new RuntimeException("The '-' & '*' & '/' section is going wrong");
+                    throw new RuntimeException("The '-' & '*' & '/' section is going wrong - in the subsection");
                 }
             }
             else{
@@ -406,14 +410,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
     }
     /* test sub feedback
-    AnalyzerTests (32/36):
-
-    Stmt (14/15): Assignment (2/3):
-    Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
-
-    Expr (13/14): Group (1/2):
-    Grouped Binary: Unexpected java.lang.IllegalStateException (type is uninitialized) Compilation Warnings: Analyzer.java:6: (cont.)
-    warning: Bool is internal proprietary API and may be removed in a future release import com.sun.org.apache.xpath.internal.operations.Bool; ^ 1 warning
-
-    * */
+    - check if INteger and Decimal in Literal are correct
+    */
 }
