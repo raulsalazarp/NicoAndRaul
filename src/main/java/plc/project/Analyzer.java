@@ -56,7 +56,14 @@ public final class Analyzer implements Ast.Visitor<Void> {
             }
             visit(ast.getValue().get());
         }
-        scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
+        //old //scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
+
+        //new section since test submission
+        Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
+        ast.setVariable(x);//is this what was missing?
+        /* instructions:
+        Defines a variable in the current scope according to the following, also setting it in the Ast (Ast.Field#setVariable).
+        * */
         return null;
     }
 
@@ -77,6 +84,9 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
         //from RETURN fn: requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
         method.setFunction(x);
+
+        //new after test submission because " Defines a function in the current scope according to the following, also setting it in the Ast (Ast.Method#setFunction). "
+        ast.setFunction(x);
         return null;
     }
 
@@ -110,26 +120,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
         else{
             throw new RuntimeException("Neither the variable's typeName or the Value are present.");
         }
-
-        /*if(ast.getValue().isPresent()){
-            visit(ast.getValue().get());
-            try{
-                requireAssignable(Environment.getType(ast.getTypeName().get()), ast.getValue().get().getType());
-            } catch(RuntimeException x){
-                throw new RuntimeException("Declaration function breaks in 'requireAssignable' line");
-            }
-        }
-        if(ast.getTypeName().isPresent()){
-            //scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL);
-            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),Environment.getType(ast.getTypeName().get()),Environment.NIL));
-        }
-        else if(ast.getValue().isPresent()){
-            //scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL);
-            ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),ast.getValue().get().getType(), Environment.NIL));
-        }
-        else{
-            throw new RuntimeException("Neither the variable's typeName or the Value are present.");
-        }*/
         return null;
     }
 
@@ -347,7 +337,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
 
         //also checks that arguments are assignable to the param types of the function (method field)
-        for(int i = 1; i < ast.getFunction().getParameterTypes().size(); i++){
+
+        for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
             visit(ast.getArguments().get(i)); //to set the type to something other than null
             requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
         }
@@ -389,9 +380,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     public static void requireAssignable(Environment.Type target, Environment.Type type) {
         //assume correct
-//        if(!(target.equals(Environment.Type.COMPARABLE) && type.equals(Environment.Type.COMPARABLE)) && !(target.equals(Environment.Type.ANY)) && !(target.equals(type))){
-//            throw new RuntimeException("Error: Not Assignable");
-//        }
         if(target.equals(type)){
             return;
         }
@@ -407,11 +395,21 @@ public final class Analyzer implements Ast.Visitor<Void> {
             throw new RuntimeException("Error: Not Assignable");
         }
     }
+    /* test sub feedback
+    AnalyzerTests (32/36):
 
-    //OH NOTES
-    /*
-     - valid condition different expected output
-     - invalid statement not throwing an exception but why would it throw exception
-     */
+    Field (2/3): maybe solved
+    Declaration: Unexpected java.lang.RuntimeException (The variable name is not defined in this scope.)
 
+    Method (1/2): maybe solved
+    Hello World: Unexpected java.lang.RuntimeException (The function main/0 is not defined in this scope.)
+
+    Stmt (14/15): Assignment (2/3):
+    Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
+
+    Expr (13/14): Group (1/2):
+    Grouped Binary: Unexpected java.lang.IllegalStateException (type is uninitialized) Compilation Warnings: Analyzer.java:6: (cont.)
+    warning: Bool is internal proprietary API and may be removed in a future release import com.sun.org.apache.xpath.internal.operations.Bool; ^ 1 warning
+
+    * */
 }
