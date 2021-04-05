@@ -4,11 +4,12 @@ import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static plc.project.Environment.getType;
+
 
 /**
  * See the specification for information about what the different visit
@@ -73,7 +74,12 @@ public final class Analyzer implements Ast.Visitor<Void> {
         //old *cannot lookup function in scope if you haven't defined it yet
         /*Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {return Environment.NIL;});*/
         //new
-        Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),ast.getFunction().getParameterTypes(),ast.getFunction().getReturnType(), args -> {
+        List<Environment.Type> ptypes = new ArrayList<Environment.Type>();
+        for(int i = 0; i < ast.getParameterTypeNames().size();i++){
+            Environment.Type x = Environment.getType(ast.getParameterTypeNames().get(i));
+            ptypes.add(x);
+        }
+        Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),ptypes,ast.getReturnTypeName().map(Environment::getType).orElse(Environment.Type.NIL), args -> {
             return Environment.NIL;
         });
         try{
@@ -128,9 +134,10 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
-        if(ast.getReceiver() instanceof Ast.Expr.Access == false){
+        if(!(ast.getReceiver() instanceof Ast.Expr.Access)){
             throw new RuntimeException("Receiver is not an access expression");
         }
+        visit(ast.getReceiver());
         try{
             requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
         } catch(RuntimeException x){
@@ -256,12 +263,12 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Group ast) {
-
         //throw new UnsupportedOperationException();  // TODO
         //validates group expression
-        if(ast.getExpression() instanceof Ast.Expr.Binary == false){
+        if(!(ast.getExpression() instanceof Ast.Expr.Binary)){
             throw new RuntimeException("contained expression in group is not a binary expr");
         }
+        visit(ast.getExpression());
         ast.setType(ast.getExpression().getType());
         return null;
     }
