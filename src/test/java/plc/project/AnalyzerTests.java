@@ -147,6 +147,20 @@ public final class AnalyzerTests {
                         // 9223372036854775807
                         new Ast.Expr.Literal(BigInteger.valueOf(Long.MAX_VALUE)),
                         null
+                ),
+                Arguments.of("Negative Integer Invalid",
+                        // -9223372036854775807
+                        new Ast.Expr.Literal(BigInteger.valueOf(Long.MIN_VALUE)),
+                        null
+                ),
+                Arguments.of("Decimal Valid",
+                        new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE)),
+                        init(new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE)), ast -> ast.setType(Environment.Type.DECIMAL))
+                ),
+                Arguments.of("Decimal Invalid",
+                        //Positive Infinity
+                        new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE).add(BigDecimal.valueOf(Double.MAX_VALUE))),
+                        null
                 )
         );
     }

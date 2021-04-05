@@ -258,7 +258,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         else if(ast.getLiteral() instanceof BigDecimal){
             BigDecimal x = new BigDecimal(""+ast.getLiteral());
             if((x.doubleValue()) == (Double.POSITIVE_INFINITY) || (x.doubleValue()) == (Double.NEGATIVE_INFINITY)){
-                throw new RuntimeException("Decimal is bigger/smaller than the 32-bit signed integer max/min value");
+                throw new RuntimeException("Decimal is bigger/smaller than the 32-bit signed decimal max/min value");
             }
             ast.setType(Environment.Type.DECIMAL);
         }
