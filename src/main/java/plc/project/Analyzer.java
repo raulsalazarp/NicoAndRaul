@@ -56,10 +56,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
             }
             visit(ast.getValue().get());
         }
-        //old //scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
+        //old *cannot lookup variable if you haven't defined it yet
+        // scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
 
         //new section since test submission
-        Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
+        Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getName()),Environment.NIL);
         ast.setVariable(x);//is this what was missing?
         /* instructions:
         Defines a variable in the current scope according to the following, also setting it in the Ast (Ast.Field#setVariable).
@@ -69,8 +70,10 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Method ast) {
-
-        Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {
+        //old *cannot lookup function in scope if you haven't defined it yet
+        /*Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {return Environment.NIL;});*/
+        //new
+        Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),ast.getFunction().getParameterTypes(),ast.getFunction().getReturnType(), args -> {
             return Environment.NIL;
         });
         try{
@@ -133,7 +136,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         } catch(RuntimeException x){
             throw new RuntimeException("Assignment function breaks in 'requireAssignable' line");
         }
-        //now we've checked both conditions for thwoeing exceptions
+        //now we've checked both conditions for throwing exceptions
         return null;
     }
 
