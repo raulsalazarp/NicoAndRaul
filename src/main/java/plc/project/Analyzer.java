@@ -401,12 +401,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
     /* test sub feedback
     AnalyzerTests (32/36):
 
-    Field (2/3): maybe solved
-    Declaration: Unexpected java.lang.RuntimeException (The variable name is not defined in this scope.)
-
-    Method (1/2): maybe solved
-    Hello World: Unexpected java.lang.RuntimeException (The function main/0 is not defined in this scope.)
-
     Stmt (14/15): Assignment (2/3):
     Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
 
