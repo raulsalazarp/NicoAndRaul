@@ -20,6 +20,54 @@ import java.util.stream.Stream;
  */
 public final class AnalyzerTests {
 
+    private static final Environment.Type OBJECT_TYPE = new Environment.Type("ObjectType", "ObjectType", init(new Scope(null), scope -> {
+        scope.defineVariable("field", "field", Environment.Type.INTEGER, Environment.NIL);
+        scope.defineFunction("method", "method", Arrays.asList(Environment.Type.ANY), Environment.Type.INTEGER, args -> Environment.NIL);
+    }));
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    public void testMethod(String test, Ast.Method ast, Ast.Method expected) {
+        Analyzer analyzer = test(ast, expected, new Scope(null));
+        if (expected != null) {
+            Assertions.assertEquals(expected.getFunction(), analyzer.scope.lookupFunction(expected.getName(), expected.getParameters().size()));
+        }
+    }
+
+    /**
+     *
+     Hello World: DEF main(): Integer DO print("Hello, World!"); END
+     Return Type Mismatch: DEF increment(num: Integer): Decimal DO RETURN num + 1; END
+
+     */
+    private static Stream<Arguments> testMethod() {
+        return Stream.of(
+                Arguments.of("Hello World",
+                        // DEF main(): Integer DO print("Hello, World!"); END
+                        new Ast.Method("main", Arrays.asList(), Arrays.asList(), Optional.of("Integer"), Arrays.asList(
+                                new Ast.Stmt.Expression(new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
+                                        new Ast.Expr.Literal("Hello, World!")
+                                )))
+                        )),
+                        init(new Ast.Method("main", Arrays.asList(), Arrays.asList(), Optional.of("Integer"), Arrays.asList(
+                                new Ast.Stmt.Expression(init(new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
+                                        init(new Ast.Expr.Literal("Hello, World!"), ast -> ast.setType(Environment.Type.STRING))
+                                )), ast -> ast.setFunction(new Environment.Function("print", "System.out.println", Arrays.asList(Environment.Type.ANY), Environment.Type.NIL, args -> Environment.NIL))))
+                        )), ast -> ast.setFunction(new Environment.Function("main", "main", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL)))
+                ),
+                Arguments.of("Return Type Mismatch",
+                        // DEF increment(num: Integer): Decimal DO RETURN num + 1; END
+                        new Ast.Method("increment", Arrays.asList("num"), Arrays.asList("Integer"), Optional.of("Decimal"), Arrays.asList(
+                                new Ast.Stmt.Return(new Ast.Expr.Binary("+",
+                                        new Ast.Expr.Access(Optional.empty(), "num"),
+                                        new Ast.Expr.Literal(BigInteger.ONE)
+                                ))
+                        )),
+                        null
+                )
+        );
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource
     public void testDeclarationStatement(String test, Ast.Stmt.Declaration ast, Ast.Stmt.Declaration expected) {
@@ -29,7 +77,7 @@ public final class AnalyzerTests {
         }
     }
 
-    public static Stream<Arguments> testDeclarationStatement() {
+    private static Stream<Arguments> testDeclarationStatement() {
         return Stream.of(
                 Arguments.of("Declaration",
                         // LET name: Integer;
@@ -41,9 +89,9 @@ public final class AnalyzerTests {
                 Arguments.of("Initialization",
                         // LET name = 1;
                         new Ast.Stmt.Declaration("name", Optional.empty(), Optional.of(new Ast.Expr.Literal(BigInteger.ONE))),
-                        init(new Ast.Stmt.Declaration("name", Optional.empty(), Optional.of(new Ast.Expr.Literal(BigInteger.ONE))), ast -> {
-                            ast.setVariable(new Environment.Variable("name", "name", Environment.Type.INTEGER, Environment.NIL));
-                        })
+                        init(new Ast.Stmt.Declaration("name", Optional.empty(), Optional.of(
+                                init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER))
+                        )), ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.INTEGER, Environment.NIL)))
                 ),
                 Arguments.of("Missing Type",
                         // LET name;
@@ -60,11 +108,57 @@ public final class AnalyzerTests {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource
+    public void testAssignmentStatement(String test, Ast.Stmt.Assignment ast, Ast.Stmt.Assignment expected) {
+        test(ast, expected, init(new Scope(null), scope -> {
+            scope.defineVariable("variable", "variable", Environment.Type.INTEGER, Environment.NIL);
+            scope.defineVariable("object", "object", OBJECT_TYPE, Environment.NIL);
+        }));
+    }
+
+    private static Stream<Arguments> testAssignmentStatement() {
+        return Stream.of(
+                Arguments.of("Variable",
+                        // variable = 1;
+                        new Ast.Stmt.Assignment(
+                                new Ast.Expr.Access(Optional.empty(), "variable"),
+                                new Ast.Expr.Literal(BigInteger.ONE)
+                        ),
+                        new Ast.Stmt.Assignment(
+                                init(new Ast.Expr.Access(Optional.empty(), "variable"), ast -> ast.setVariable(new Environment.Variable("variable", "variable", Environment.Type.INTEGER, Environment.NIL))),
+                                init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER))
+                        )
+                ),
+                Arguments.of("Invalid Type",
+                        // variable = "string";
+                        new Ast.Stmt.Assignment(
+                                new Ast.Expr.Access(Optional.empty(), "variable"),
+                                new Ast.Expr.Literal("string")
+                        ),
+                        null
+                ),
+                Arguments.of("Field",
+                        // object.field = 1;
+                        new Ast.Stmt.Assignment(
+                                new Ast.Expr.Access(Optional.of(new Ast.Expr.Access(Optional.empty(), "object")), "field"),
+                                new Ast.Expr.Literal(BigInteger.ONE)
+                        ),
+                        new Ast.Stmt.Assignment(
+                                init(new Ast.Expr.Access(Optional.of(
+                                        init(new Ast.Expr.Access(Optional.empty(), "object"), ast -> ast.setVariable(new Environment.Variable("object", "object", OBJECT_TYPE, Environment.NIL)))
+                                ), "field"), ast -> ast.setVariable(new Environment.Variable("field", "field", Environment.Type.INTEGER, Environment.NIL))),
+                                init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER))
+                        )
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
     public void testIfStatement(String test, Ast.Stmt.If ast, Ast.Stmt.If expected) {
         test(ast, expected, new Scope(null));
     }
 
-    public static Stream<Arguments> testIfStatement() {
+    private static Stream<Arguments> testIfStatement() {
         return Stream.of(
                 Arguments.of("Valid Condition",
                         // IF TRUE DO print(1); END
@@ -131,7 +225,7 @@ public final class AnalyzerTests {
         test(ast, expected, new Scope(null));
     }
 
-    public static Stream<Arguments> testLiteralExpression() {
+    private static Stream<Arguments> testLiteralExpression() {
         return Stream.of(
                 Arguments.of("Boolean",
                         // TRUE
@@ -147,20 +241,6 @@ public final class AnalyzerTests {
                         // 9223372036854775807
                         new Ast.Expr.Literal(BigInteger.valueOf(Long.MAX_VALUE)),
                         null
-                ),
-                Arguments.of("Negative Integer Invalid",
-                        // -9223372036854775807
-                        new Ast.Expr.Literal(BigInteger.valueOf(Long.MIN_VALUE)),
-                        null
-                ),
-                Arguments.of("Decimal Valid",
-                        new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE)),
-                        init(new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE)), ast -> ast.setType(Environment.Type.DECIMAL))
-                ),
-                Arguments.of("Decimal Invalid",
-                        //Positive Infinity
-                        new Ast.Expr.Literal(BigDecimal.valueOf(Double.MAX_VALUE).add(BigDecimal.valueOf(Double.MAX_VALUE))),
-                        null
                 )
         );
     }
@@ -171,7 +251,7 @@ public final class AnalyzerTests {
         test(ast, expected, new Scope(null));
     }
 
-    public static Stream<Arguments> testBinaryExpression() {
+    private static Stream<Arguments> testBinaryExpression() {
         return Stream.of(
                 Arguments.of("Logical AND Valid",
                         // TRUE AND FALSE
@@ -227,6 +307,62 @@ public final class AnalyzerTests {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource
+    public void testAccessExpression(String test, Ast.Expr.Access ast, Ast.Expr.Access expected) {
+        test(ast, expected, init(new Scope(null), scope -> {
+            scope.defineVariable("variable", "variable", Environment.Type.INTEGER, Environment.NIL);
+            scope.defineVariable("object", "object", OBJECT_TYPE, Environment.NIL);
+        }));
+    }
+
+    private static Stream<Arguments> testAccessExpression() {
+        return Stream.of(
+                Arguments.of("Variable",
+                        // variable
+                        new Ast.Expr.Access(Optional.empty(), "variable"),
+                        init(new Ast.Expr.Access(Optional.empty(), "variable"), ast -> ast.setVariable(new Environment.Variable("variable", "variable", Environment.Type.INTEGER, Environment.NIL)))
+                ),
+                Arguments.of("Field",
+                        // object.field
+                        new Ast.Expr.Access(Optional.of(
+                                new Ast.Expr.Access(Optional.empty(), "object")
+                        ), "field"),
+                        init(new Ast.Expr.Access(Optional.of(
+                                init(new Ast.Expr.Access(Optional.empty(), "object"), ast -> ast.setVariable(new Environment.Variable("object", "object", OBJECT_TYPE, Environment.NIL)))
+                        ), "field"), ast -> ast.setVariable(new Environment.Variable("field", "field", Environment.Type.INTEGER, Environment.NIL)))
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    public void testFunctionExpression(String test, Ast.Expr.Function ast, Ast.Expr.Function expected) {
+        test(ast, expected, init(new Scope(null), scope -> {
+            scope.defineFunction("function", "function", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL);
+            scope.defineVariable("object", "object", OBJECT_TYPE, Environment.NIL);
+        }));
+    }
+
+    private static Stream<Arguments> testFunctionExpression() {
+        return Stream.of(
+                Arguments.of("Function",
+                        // function()
+                        new Ast.Expr.Function(Optional.empty(), "function", Arrays.asList()),
+                        init(new Ast.Expr.Function(Optional.empty(), "function", Arrays.asList()), ast -> ast.setFunction(new Environment.Function("function", "function", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL)))
+                ),
+                Arguments.of("Method",
+                        // object.method()
+                        new Ast.Expr.Function(Optional.of(
+                                new Ast.Expr.Access(Optional.empty(), "object")
+                        ), "method", Arrays.asList()),
+                        init(new Ast.Expr.Function(Optional.of(
+                                init(new Ast.Expr.Access(Optional.empty(), "object"), ast -> ast.setVariable(new Environment.Variable("object", "object", OBJECT_TYPE, Environment.NIL)))
+                        ), "method", Arrays.asList()), ast -> ast.setFunction(new Environment.Function("method", "method", Arrays.asList(Environment.Type.ANY), Environment.Type.INTEGER, args -> Environment.NIL)))
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
     public void testRequireAssignable(String test, Environment.Type target, Environment.Type type, boolean success) {
         if (success) {
             Assertions.assertDoesNotThrow(() -> Analyzer.requireAssignable(target, type));
@@ -235,7 +371,7 @@ public final class AnalyzerTests {
         }
     }
 
-    public static Stream<Arguments> testRequireAssignable() {
+    private static Stream<Arguments> testRequireAssignable() {
         return Stream.of(
                 Arguments.of("Integer to Integer", Environment.Type.INTEGER, Environment.Type.INTEGER, true),
                 Arguments.of("Integer to Decimal", Environment.Type.DECIMAL, Environment.Type.INTEGER, false),
@@ -261,12 +397,11 @@ public final class AnalyzerTests {
     }
 
     /**
-     * Runs a callback initializer on the given AST, used for setting type
-     * information inline.
+     * Runs a callback on the given value, used for inline initialization.
      */
-    private static <T extends Ast> T init(T ast, Consumer<T> initializer) {
-        initializer.accept(ast);
-        return ast;
+    private static <T> T init(T value, Consumer<T> initializer) {
+        initializer.accept(value);
+        return value;
     }
 
 }

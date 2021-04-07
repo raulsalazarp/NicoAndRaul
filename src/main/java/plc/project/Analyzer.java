@@ -18,7 +18,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     public Scope scope;
     private Ast.Method method;
-    private plc.project.Environment.Function holdthis;
 
     public Analyzer(Scope parent) {
         scope = new Scope(parent);
@@ -60,7 +59,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
 
         Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getTypeName()),Environment.NIL);
-        ast.setVariable(x);//is this what was missing?
+        ast.setVariable(x);
+
         /* instructions:
         Defines a variable in the current scope according to the following, also setting it in the Ast (Ast.Field#setVariable).
         * */
@@ -81,21 +81,25 @@ public final class Analyzer implements Ast.Visitor<Void> {
         Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),ptypes,ast.getReturnTypeName().map(Environment::getType).orElse(Environment.Type.NIL), args -> {
             return Environment.NIL;
         });
+
+        //from RETURN fn: requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
+
+        ast.setFunction(x);
         try{
             scope = new Scope(scope);
+            method = ast;
             for(Ast.Stmt stmt : ast.getStatements()){
                 visit(stmt);
             }
         }
         finally {
             scope = scope.getParent();
+            method = null;
         }
-        //from RETURN fn: requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
-        holdthis = x;
-        //method.setFunction(x);
+
 
         //new after test submission because " Defines a function in the current scope according to the following, also setting it in the Ast (Ast.Method#setFunction). "
-        ast.setFunction(x);
+
         return null;
     }
 
@@ -134,12 +138,10 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
-
         if(!(ast.getReceiver() instanceof Ast.Expr.Access)){
             throw new RuntimeException("Receiver is not an access expression");
         }
         visit(ast.getReceiver());
-
         visit(ast.getValue()); //added after second feedback cause of third error
         try{
             requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
@@ -224,7 +226,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
         visit(ast.getValue()); //because we are getting the type later
         try{
-            requireAssignable(holdthis.getReturnType(), ast.getValue().getType());
+            requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
             //requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
         } catch(RuntimeException x){
             //if catches a runtime exception
@@ -343,63 +345,30 @@ public final class Analyzer implements Ast.Visitor<Void> {
     public Void visit(Ast.Expr.Function ast) { //HOW DO WE DO THE RECEIVER STUFF
 
         //then sets function of expr which internally sets the type of the expression to be the return type of the function
-
         //"the variable is a method of the receiver is present"
 
         if((ast.getReceiver().isPresent())){
             visit(ast.getReceiver().get());
             ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
-            //if(ast.getArguments().size() != 0){
-                for(int i = 1; i < ast.getFunction().getParameterTypes().size(); i++){
-                    visit(ast.getArguments().get(i)); //to set the type to something other than null
-                    requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
-                }
-            //}
+            for(int i = 0; i < ast.getArguments().size(); i++){
+                visit(ast.getArguments().get(i)); //to set the type to something other than null
+                requireAssignable((ast.getFunction().getParameterTypes().get(i+1)), ast.getArguments().get(i).getType());
+            }
         }
         else{ //otherwise it is a function in the current scope.
             ast.setFunction(scope.lookupFunction(ast.getName(),ast.getArguments().size()));
-            //if(ast.getArguments().size() != 0){
-                for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
-                    visit(ast.getArguments().get(i)); //to set the type to something other than null
-                    requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
-                }
-            //}
-        }
-
-        //also checks that arguments are assignable to the param types of the function (method field)
-
-        //is arguments.size always <= paramtypes.size()
-
-        //if there is no arguments is there an error ?
-        //what happens with the thing of arguments starting at index 1 instead of 0
-
-        /** OLD **/
-        /*
-        if((ast.getReceiver().isPresent())){
-            visit(ast.getReceiver().get());
-            ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
-        }
-        else{ //otherwise it is a function in the current scope.
-            ast.setFunction(scope.lookupFunction(ast.getName(),ast.getArguments().size()));
-
-        }
-
-        //also checks that arguments are assignable to the param types of the function (method field)
-
-        //is arguments.size always <= paramtypes.size()
-
-        if(ast.getArguments().size() != 0){
-            for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
+            for(int i = 0; i < ast.getArguments().size(); i++){
                 visit(ast.getArguments().get(i)); //to set the type to something other than null
                 requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
             }
         }
+
+        //also checks that arguments are assignable to the param types of the function (method field)
+
+        //is arguments.size always <= paramtypes.size()
+
         //if there is no arguments is there an error ?
         //what happens with the thing of arguments starting at index 1 instead of 0
-        */
-        /** END OLD */
-
-
 
         return null;
     }
@@ -454,7 +423,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         }
     }
     /*
-    make sure all files are up to date
+
 
     second submission test feedback:
     AnalyzerTests (36/41):
@@ -462,7 +431,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         Declaration: Unexpected java.lang.RuntimeException (Unknown type name.)
         //getType isnt matching to anything //likely solved
 
-      Method (1/3): //fixed by holdthis variable?
+      Method (1/3): //fixed by fixing what method is set to (inside new scope of method ast function)
         Hello World: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
         No Explicit Return Type: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
 
@@ -474,6 +443,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
       Expr (15/16): //fixed with the ting new/old blocks in the FUNCTION function
         Function (3/4):
           Method: Unexpected java.lang.IndexOutOfBoundsException (Index 0 out of bounds for length 0)
+
+      make sure all files are up to date
     */
 
 }
