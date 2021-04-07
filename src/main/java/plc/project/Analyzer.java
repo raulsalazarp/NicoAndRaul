@@ -350,7 +350,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
             visit(ast.getReceiver().get());
             ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
             //if(ast.getArguments().size() != 0){
-                for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
+                for(int i = 1; i < ast.getFunction().getParameterTypes().size(); i++){
                     visit(ast.getArguments().get(i)); //to set the type to something other than null
                     requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
                 }
@@ -458,19 +458,20 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     second submission test feedback:
     AnalyzerTests (36/41):
-      Field (2/3):
+      Field (2/3): //fixed by clesaring circular logic and getType error from Field function?
         Declaration: Unexpected java.lang.RuntimeException (Unknown type name.)
         //getType isnt matching to anything //likely solved
 
-      Method (1/3):
+      Method (1/3): //fixed by holdthis variable?
         Hello World: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
         No Explicit Return Type: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
 
-      Stmt (16/17):
+      Stmt (16/17): //fixed by visiting value?
         Assignment (2/3):
           Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
 
-      Expr (15/16):
+
+      Expr (15/16): //fixed with the ting new/old blocks in the FUNCTION function
         Function (3/4):
           Method: Unexpected java.lang.IndexOutOfBoundsException (Index 0 out of bounds for length 0)
     */
