@@ -134,10 +134,13 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
+
         if(!(ast.getReceiver() instanceof Ast.Expr.Access)){
             throw new RuntimeException("Receiver is not an access expression");
         }
         visit(ast.getReceiver());
+
+        visit(ast.getValue()); //added after second feedback cause of third error
         try{
             requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
         } catch(RuntimeException x){
@@ -342,20 +345,61 @@ public final class Analyzer implements Ast.Visitor<Void> {
         //then sets function of expr which internally sets the type of the expression to be the return type of the function
 
         //"the variable is a method of the receiver is present"
+
+        if((ast.getReceiver().isPresent())){
+            visit(ast.getReceiver().get());
+            ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
+            //if(ast.getArguments().size() != 0){
+                for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
+                    visit(ast.getArguments().get(i)); //to set the type to something other than null
+                    requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
+                }
+            //}
+        }
+        else{ //otherwise it is a function in the current scope.
+            ast.setFunction(scope.lookupFunction(ast.getName(),ast.getArguments().size()));
+            //if(ast.getArguments().size() != 0){
+                for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
+                    visit(ast.getArguments().get(i)); //to set the type to something other than null
+                    requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
+                }
+            //}
+        }
+
+        //also checks that arguments are assignable to the param types of the function (method field)
+
+        //is arguments.size always <= paramtypes.size()
+
+        //if there is no arguments is there an error ?
+        //what happens with the thing of arguments starting at index 1 instead of 0
+
+        /** OLD **/
+        /*
         if((ast.getReceiver().isPresent())){
             visit(ast.getReceiver().get());
             ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
         }
         else{ //otherwise it is a function in the current scope.
             ast.setFunction(scope.lookupFunction(ast.getName(),ast.getArguments().size()));
+
         }
 
         //also checks that arguments are assignable to the param types of the function (method field)
 
-        for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
-            visit(ast.getArguments().get(i)); //to set the type to something other than null
-            requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
+        //is arguments.size always <= paramtypes.size()
+
+        if(ast.getArguments().size() != 0){
+            for(int i = 0; i < ast.getFunction().getParameterTypes().size(); i++){
+                visit(ast.getArguments().get(i)); //to set the type to something other than null
+                requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
+            }
         }
+        //if there is no arguments is there an error ?
+        //what happens with the thing of arguments starting at index 1 instead of 0
+        */
+        /** END OLD */
+
+
 
         return null;
     }
