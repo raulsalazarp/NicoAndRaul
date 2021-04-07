@@ -18,6 +18,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     public Scope scope;
     private Ast.Method method;
+    private plc.project.Environment.Function holdthis;
 
     public Analyzer(Scope parent) {
         scope = new Scope(parent);
@@ -90,7 +91,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
             scope = scope.getParent();
         }
         //from RETURN fn: requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
-        method.setFunction(x);
+        holdthis = x;
+        //method.setFunction(x);
 
         //new after test submission because " Defines a function in the current scope according to the following, also setting it in the Ast (Ast.Method#setFunction). "
         ast.setFunction(x);
@@ -219,7 +221,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
         visit(ast.getValue()); //because we are getting the type later
         try{
-            requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
+            requireAssignable(holdthis.getReturnType(), ast.getValue().getType());
+            //requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
         } catch(RuntimeException x){
             //if catches a runtime exception
             throw new RuntimeException("The value is not assignable to the return type of the method it's in");
