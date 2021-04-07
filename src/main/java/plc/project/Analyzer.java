@@ -1,6 +1,5 @@
 package plc.project;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -49,19 +48,17 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Field ast) {
+
         if(ast.getValue().isPresent()){
+            visit(ast.getValue().get());
             try{
-                requireAssignable(ast.getVariable().getType(), ast.getValue().get().getType());
+                requireAssignable(Environment.getType(ast.getTypeName()), ast.getValue().get().getType());
             } catch(RuntimeException x){
                 throw new RuntimeException("Field function breaks in 'requireAssignable' line");
             }
-            visit(ast.getValue().get());
         }
-        //old *cannot lookup variable if you haven't defined it yet
-        // scope.defineVariable(ast.getName(), ast.getName(), scope.lookupVariable(ast.getName()).getType(),Environment.NIL);
 
-        //new section since test submission
-        Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getName()),Environment.NIL);
+        Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getTypeName()),Environment.NIL);
         ast.setVariable(x);//is this what was missing?
         /* instructions:
         Defines a variable in the current scope according to the following, also setting it in the Ast (Ast.Field#setVariable).
@@ -409,10 +406,26 @@ public final class Analyzer implements Ast.Visitor<Void> {
             throw new RuntimeException("Error: Not Assignable");
         }
     }
-    /* test sub feedback
+    /*
+    make sure all files are up to date
 
-    //almost ready for second sub
+    second submission test feedback:
+    AnalyzerTests (36/41):
+      Field (2/3):
+        Declaration: Unexpected java.lang.RuntimeException (Unknown type name.)
+        //getType isnt matching to anything //likely solved
 
-    - check if INteger and Decimal in Literal are correct
+      Method (1/3):
+        Hello World: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
+        No Explicit Return Type: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
+
+      Stmt (16/17):
+        Assignment (2/3):
+          Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
+
+      Expr (15/16):
+        Function (3/4):
+          Method: Unexpected java.lang.IndexOutOfBoundsException (Index 0 out of bounds for length 0)
     */
+
 }
