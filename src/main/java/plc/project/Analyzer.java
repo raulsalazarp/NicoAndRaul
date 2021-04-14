@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+//ready for final submission
 
 
 /**
@@ -61,17 +62,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
         Environment.Variable x = scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getTypeName()),Environment.NIL);
         ast.setVariable(x);
 
-        /* instructions:
-        Defines a variable in the current scope according to the following, also setting it in the Ast (Ast.Field#setVariable).
-        * */
         return null;
     }
 
     @Override
     public Void visit(Ast.Method ast) {
-        //old *cannot lookup function in scope if you haven't defined it yet
-        /*Environment.Function x = scope.defineFunction(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getParameterTypes(),scope.lookupFunction(ast.getName(),ast.getParameters().size()).getReturnType(), args -> {return Environment.NIL;});*/
-        //new
 
         List<Environment.Type> ptypes = new ArrayList<Environment.Type>();
         for(int i = 0; i < ast.getParameterTypeNames().size();i++){
@@ -82,9 +77,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
             return Environment.NIL;
         });
 
-        //from RETURN fn: requireAssignable(method.getFunction().getReturnType(), ast.getValue().getType());
-
         ast.setFunction(x);
+
         try{
             scope = new Scope(scope);
             method = ast;
@@ -96,9 +90,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
             scope = scope.getParent();
             method = null;
         }
-
-
-        //new after test submission because " Defines a function in the current scope according to the following, also setting it in the Ast (Ast.Method#setFunction). "
 
         return null;
     }
@@ -342,12 +333,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
     }
 
     @Override
-    public Void visit(Ast.Expr.Function ast) { //HOW DO WE DO THE RECEIVER STUFF
-
-        //then sets function of expr which internally sets the type of the expression to be the return type of the function
-        //"the variable is a method of the receiver is present"
-
-        if((ast.getReceiver().isPresent())){
+    public Void visit(Ast.Expr.Function ast) {
+        if((ast.getReceiver().isPresent())){ //
             visit(ast.getReceiver().get());
             ast.setFunction(ast.getReceiver().get().getType().getMethod(ast.getName(),ast.getArguments().size()));
             for(int i = 0; i < ast.getArguments().size(); i++){
@@ -362,14 +349,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
                 requireAssignable((ast.getFunction().getParameterTypes().get(i)), ast.getArguments().get(i).getType());
             }
         }
-
-        //also checks that arguments are assignable to the param types of the function (method field)
-
-        //is arguments.size always <= paramtypes.size()
-
-        //if there is no arguments is there an error ?
-        //what happens with the thing of arguments starting at index 1 instead of 0
-
         return null;
     }
 
@@ -422,29 +401,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
             throw new RuntimeException("Error: Not Assignable");
         }
     }
-    /*
-
-
-    second submission test feedback:
-    AnalyzerTests (36/41):
-      Field (2/3): //fixed by clesaring circular logic and getType error from Field function?
-        Declaration: Unexpected java.lang.RuntimeException (Unknown type name.)
-        //getType isnt matching to anything //likely solved
-
-      Method (1/3): //fixed by fixing what method is set to (inside new scope of method ast function)
-        Hello World: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
-        No Explicit Return Type: Unexpected java.lang.NullPointerException (Cannot invoke \"plc.project.Ast$Method.setFunction(plc.project.Environment$Function)\" because \"this.method\" is null)
-
-      Stmt (16/17): //fixed by visiting value?
-        Assignment (2/3):
-          Variable: Unexpected java.lang.RuntimeException (Assignment function breaks in \'requireAssignable\' line)
-
-
-      Expr (15/16): //fixed with the ting new/old blocks in the FUNCTION function
-        Function (3/4):
-          Method: Unexpected java.lang.IndexOutOfBoundsException (Index 0 out of bounds for length 0)
-
-      make sure all files are up to date
-    */
+    //ready for final submission
 
 }
