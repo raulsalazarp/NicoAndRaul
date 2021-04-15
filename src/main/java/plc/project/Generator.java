@@ -72,6 +72,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Field ast) {
         //again do we assume the type name is correctly formatted
         if(ast.getValue().isPresent()){
+            //convert type names to jvm names (use getjvmname() in environment)
             print(ast.getTypeName()," ",ast.getName()," = ",(ast.getValue().get()),";");
         }
         else{
@@ -92,6 +93,7 @@ public final class Generator implements Ast.Visitor<Void> {
         String inner = "";
         for(int i = 0; i < ast.getParameters().size(); i++){
             if(i < ast.getParameters().size()-1){
+                //convert parameter type names to jvm names
                 inner = inner + ast.getParameterTypeNames().get(i) +" "+ ast.getParameters().get(i) + ", ";
             }
             else{
@@ -350,5 +352,4 @@ public final class Generator implements Ast.Visitor<Void> {
 
 }
 /*
-
  */

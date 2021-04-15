@@ -303,6 +303,10 @@ final class ParserTests {
                 Arguments.of("Escape Character",
                         Arrays.asList(new Token(Token.Type.STRING, "\"Hello,\\nWorld!\"", 0)),
                         new Ast.Expr.Literal("Hello,\nWorld!")
+                ),
+                Arguments.of("NIL",
+                        Arrays.asList(new Token(Token.Type.IDENTIFIER, "NIL", 0)),
+                        new Ast.Expr.Literal(null)
                 )
         );
     }
@@ -420,7 +424,16 @@ final class ParserTests {
                                 new Token(Token.Type.IDENTIFIER, "field", 4)
                         ),
                         new Ast.Expr.Access(Optional.of(new Ast.Expr.Access(Optional.empty(), "obj")), "field")
-                )
+                )/*, //weird
+                Arguments.of("Invalid name",
+                        Arrays.asList(
+                                //obj.5
+                                new Token(Token.Type.IDENTIFIER, "obj", 0),
+                                new Token(Token.Type.OPERATOR, ".", 3),
+                                new Token(Token.Type.INTEGER, "5", 4)
+                        ),
+                        new Ast.Expr.Access(Optional.of(new Ast.Expr.Access(Optional.empty(), "obj")), "field")
+                )*/
         );
     }
 

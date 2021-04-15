@@ -52,7 +52,7 @@ public final class Parser {
         while (peek("DEF")) {
             methods.add(parseMethod());
         }
-        if (peek("LET"))
+        if (tokens.has(0))
             throw new ParseException("Error: @ index " + indexFinder() + " there is a field after a method", indexFinder());
         return new Ast.Source(fields, methods);
 
@@ -65,16 +65,19 @@ public final class Parser {
     public Ast.Field parseField() throws ParseException {
         //we need string name and Optional<Expr> value;
         if (match("LET")) {
-            if (peek(Token.Type.IDENTIFIER)) {
+            if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
                 String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                match(":");
+                String type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
                 if (match("=")) {
                     Ast.Expr value = parseExpression();
                     if (match(";")) {
-                        return new Ast.Field(name, Optional.of(value));
+                        return new Ast.Field(name,type, Optional.of(value));
                     }
                 } else if (match(";")) {
-                    return new Ast.Field(name, empty());
+                    return new Ast.Field(name,type, empty());
                 }
             }
         }
@@ -87,22 +90,30 @@ public final class Parser {
      */
     public Ast.Method parseMethod() throws ParseException {
         //we need string name list of strings parameters and list of statements
-        if (peek("DEF")) {
-            match("DEF");
+        if (match("DEF")) {
             List<String> params = new ArrayList<>();
+            List<String> paramTypes = new ArrayList<>();
             List<Ast.Stmt> stats = new ArrayList<>();
             if (peek(Token.Type.IDENTIFIER)) {
                 String name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
                 if (match("(")) {
-                    if (peek(Token.Type.IDENTIFIER)) {
+                    if (peek(Token.Type.IDENTIFIER,':',Token.Type.IDENTIFIER)) {
                         String temp = tokens.get(0).getLiteral();
                         params.add(temp);
                         match(Token.Type.IDENTIFIER);
+                        match(":");
+                        String type = tokens.get(0).getLiteral();
+                        paramTypes.add(type);
+                        match(Token.Type.IDENTIFIER);
                         while (match(",")) {
-                            if (peek(Token.Type.IDENTIFIER)) {
+                            if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
                                 temp = tokens.get(0).getLiteral();
                                 params.add(temp);
+                                match(Token.Type.IDENTIFIER);
+                                match(":");
+                                type = tokens.get(0).getLiteral();
+                                paramTypes.add(type);
                                 match(Token.Type.IDENTIFIER);
                             } else {
                                 throw new ParseException("Error: @ index " + indexFinder() + " not an identifier", indexFinder());
@@ -110,15 +121,25 @@ public final class Parser {
                         }
                     }
                     if (match(")")) {
+                        Boolean ret = false;
+                        String returnType = "";
+                        if (peek(":",Token.Type.IDENTIFIER)) {
+                            ret= true;
+                            match(":");
+                            returnType = tokens.get(0).getLiteral();
+                            match(Token.Type.IDENTIFIER);
+                        }
                         if (match("DO")) {
-                            while (match("END") == false) { //check if theres tokens left
+                            while (!match("END")) { //check if theres tokens left
                                 Ast.Stmt s = parseStatement();
                                 stats.add(s);
                             }
-                            return new Ast.Method(name, params, stats);
+                            if(ret)
+                                return new Ast.Method(name, params,paramTypes,Optional.of(returnType), stats);
+                            else
+                                return new Ast.Method(name, params,paramTypes,empty(), stats);
                         }
                     }
-
                 }
             }
         }
@@ -166,12 +187,25 @@ public final class Parser {
             if (peek(Token.Type.IDENTIFIER)) {
                 String name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+                String type = "";
+                Boolean uder = false;
+                if(peek(":",Token.Type.IDENTIFIER)){
+                    uder = true;
+                    match(":");
+                    type = tokens.get(0).getLiteral();
+                    match(Token.Type.IDENTIFIER);
+                }
                 if (match("=")) {
                     Ast.Expr value = parseExpression();
-                    if (match(";"))
-                        return new Ast.Stmt.Declaration(name, Optional.of(value));
+                    if (match(";")){
+                        if(uder)
+                            return new Ast.Stmt.Declaration(name,Optional.of(type), Optional.of(value));
+                        return new Ast.Stmt.Declaration(name,empty(), Optional.of(value));
+                    }
                 } else if (match(";")) {
-                    return new Ast.Stmt.Declaration(name, empty());
+                    if(uder)
+                        return new Ast.Stmt.Declaration(name,Optional.of(type), empty());
+                    return new Ast.Stmt.Declaration(name,empty(), empty());
                 }
             }
         }
@@ -362,7 +396,7 @@ public final class Parser {
                 name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
                 list = new ArrayList<Ast.Expr>();
-                if (peek("(") == false) {
+                if (!peek("(")) {
                     result = new Ast.Expr.Access(Optional.of(receiver), name);
                 } else if (peek("(", ")")) {
                     match("(", ")");
@@ -581,3 +615,21 @@ public final class Parser {
 
 }
 //ready to submit final ting
+/*
+ParserTests (51/56):
+    Source (4/5):
+        Method Field: Expected a ParseException to be thrown, received Ast.Source{fields=[]functions=[Ast.Function{name=\'name\', parameters=[], statements=[Ast.Stmt.Expression{expression=Ast.Expr.Access{receiver=Optional.empty, name=\'stmt\'}}]}]}
+    Expr (21/25):
+        Literal (6/7):
+            Nil Literal: Incorrect result, received Ast.Expr.Access{receiver=Optional.empty, name=\'NIL\'}
+        Access (2/3):
+            Invalid Name: Expected a ParseException to be thrown, received Ast.Expr.Access{receiver=Optional.empty, name=\'obj\'}
+        Priority (1/3):
+            And Or: Incorrect result, received Ast.Expr.Binary{operator=\'AND\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'OR\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
+            Equals Not Equals: Incorrect result, received Ast.Expr.Binary{operator=\'==\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'!=\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
+    Error (1/1):
+        Missing Closing Parenthesis: Incorrect index, received 2.
+        Invalid Closing Parenthesis: Incorrect index, received 2.
+        Missing DO: Incorrect index, received 2.
+        Invalid DO: Incorrect index, received 2.
+ */
