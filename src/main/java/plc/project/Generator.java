@@ -1,6 +1,7 @@
 package plc.project;
 
 import java.io.PrintWriter;
+import java.util.List;
 
 public final class Generator implements Ast.Visitor<Void> {
 
@@ -30,6 +31,39 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Source ast) {
+        print("public class Main {");
+
+        indent++;
+        for(Ast.Field x : ast.getFields()){
+            newline(indent);
+            print(x);
+        }
+        indent--;
+        newline(indent);
+
+        indent++;
+        newline(indent);
+        print("public static void main(String[] args) {");
+        indent++;
+        newline(indent);
+        indent--;
+        print("System.exit(new Main().main());");
+        newline(indent);
+        print("}");
+        indent--;
+        newline(indent);
+
+        indent++;
+        for(Ast.Method x : ast.getMethods()){
+            newline(indent);
+            print(x);
+        }
+
+        indent--;
+        newline(indent);
+
+        newline(indent);
+        print("}");
 
         return null;
     }
@@ -48,9 +82,10 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Method ast) {
-        //assume return type name is formatted correctly or do as we did in declaration
-        //again the concatenation issue
+        //USE GetVar.getType.GetJVNname for return typ
+        //again the concatenation issue = fix with helper function that visist them in place
         String inner = "";
+
         for(int i = 0; i < ast.getParameters().size(); i++){
             if(i < ast.getParameters().size()-1){
                 inner = inner + ast.getParameterTypeNames().get(i) +" "+ ast.getParameters().get(i) + ", ";
@@ -60,77 +95,72 @@ public final class Generator implements Ast.Visitor<Void> {
             }
 
         }
-        print(ast.getReturnTypeName()," ",ast.getName(),"(",inner,") {");
+        print(ast.getFunction().getReturnType().getJvmName()," ",ast.getFunction().getJvmName(),"(",inner,") {");
+        indent++;
         for(Ast.Stmt x : ast.getStatements()){
-            newline(1);
-            print(visit(x),";");
+            newline(indent);
+            print((x));
         }
-        newline(0);
+        indent--;
+        newline(indent);
         print("}");
-        newline(0); //new line after closing bracket
+
 
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Expression ast) {
-        print(visit(ast.getExpression()),";");
+        print((ast.getExpression()),";");
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Declaration ast) {
 
-        if(ast.getTypeName().isPresent()){  //what does type name look like
-            String type = (ast.getTypeName().get());
-            if(type.equals("Integer"))
-                type = "int";
-            else if(type.equals("Decimal"))
-                type = "double";
-            else if(type.equals("Character"))
-                type = "char";
-            else if(type.equals("Boolean"))
-                type = "boolean";
+        String type = ast.getVariable().getType().getJvmName();
 
-            if(ast.getValue().isPresent()){
-                print(type," ",ast.getName()," = ",ast.getValue().get(),";");
-            }
-            else{
-                print(type," ",ast.getName(),";");
-            }
+        if(ast.getValue().isPresent()){
+            print(type," ",ast.getName()," = ",ast.getValue().get(),";");
         }
-        //
+        else{
+            print(type," ",ast.getName(),";");
+        }
 
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
-        print(visit(ast.getReceiver())," = ",visit(ast.getValue()),";");
+        print((ast.getReceiver())," = ",(ast.getValue()),";");
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.If ast) {
-        print("if (",visit(ast.getCondition()),") {");
+        print("if (",(ast.getCondition()),") {");
+        indent++;
         for(Ast.Stmt x : ast.getThenStatements()){
-            newline(1);
-            print(visit(x),";");
+            newline(indent);
+            print((x));
         }
-        newline(0);
+        indent--;
+        newline(indent);
         if(ast.getElseStatements().size() < 1){
             print("}");
-            newline(0);
+
         }
         else{
             print("} else {");
+            indent++;
             for(Ast.Stmt x : ast.getElseStatements()){
-                newline(1);
-                print(visit(x),";");
+                newline(indent);
+                print((x));
             }
-            newline(0);
+            indent--;
+            newline(indent);
             print("}");
-            newline(0);
+
         }
 
         return null;
@@ -164,32 +194,36 @@ public final class Generator implements Ast.Visitor<Void> {
         Environment.Type vartype = ast.getValue().getType();
         String type = t2s(vartype);
         print("for (",type," ",ast.getName()," : ",visit(ast.getValue()),") {");
+        indent++;
         for(Ast.Stmt x : ast.getStatements()){
-            newline(1);
-            print(visit(x),";");
+            newline(indent);
+            print((x));
         }
-        newline(0);
+        indent--;
+        newline(indent);
         print("}");
-        newline(0); //new line after closing bracket
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.While ast) {
-        print("while (",visit(ast.getCondition()),") {");
+        print("while (",(ast.getCondition()),") {");
+        indent++;
         for(Ast.Stmt x : ast.getStatements()){
-            newline(1);
-            print(visit(x),";");
+            newline(indent);
+            print((x));
         }
-        newline(0);
+        indent--;
+        newline(indent);
         print("}");
-        newline(0); //new line after closing bracket
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Return ast) {
-        print("return ",visit(ast.getValue()),";");
+        print("return ",(ast.getValue()),";");
         return null;
     }
 
@@ -219,7 +253,7 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Group ast) {
-        print("(",visit(ast.getExpression()),")");
+        print("(",(ast.getExpression()),")");
         return null;
     }
 
@@ -229,72 +263,45 @@ public final class Generator implements Ast.Visitor<Void> {
         Ast.Expr left = ast.getLeft();
         Ast.Expr right = ast.getRight();
 
-        /** VISITING **/ //so that literals are formatted
-        //print(visit(left),"&&",visit(right));
+        /** NOT VISITING **/ //collapsed under this line
+
         if(op.equals("AND")){
-            print(visit(left)," && ",visit(right));
+            print(left," && ",right);
         }
         else if(op.equals("OR")){
-            print(visit(left)," || ",visit(right));
+            print(left,"||",right);
         }
         else if(op.equals("<")){
-            print(visit(left)," < ",visit(right));
+            print(left,"<",right);
         }
         else if(op.equals(">")){
-            print(visit(left)," > ",visit(right));
+            print(left,">",right);
         }
         else if(op.equals("<=")){
-            print(visit(left)," <= ",visit(right));
+            print(left,"<=",right);
         }
         else if(op.equals(">=")){
-            print(visit(left)," >= ",visit(right));
+            print(left,">=",right);
         }
         else if(op.equals("==")){
-            print(visit(left)," == ",visit(right));
+            print(left,"==",right);
         }
         else if(op.equals("!=")){
-            print(visit(left)," != ",visit(right));
+            print(left,"!=",right);
         }
         else if(op.equals("+")){
-            print(visit(left)," + ",visit(right));
+            print(left," + ",right);
         }
         else if(op.equals("-")){
-            print(visit(left)," - ",visit(right));
+            print((left)," - ",(right));
         }
         else if(op.equals("*")){
-            print(visit(left)," * ",visit(right));
+            print((left)," * ",(right));
         }
         else if(op.equals("/")){
-            print(visit(left)," / ",visit(right));
+            print((left)," / ",(right));
         }
 
-        /** NOT VISITING **/ //collapsed under this line
-        /*
-//        if(op.equals("AND")){
-//            print(left,"&&",right);
-//        }
-//        else if(op.equals("OR")){
-//            print(left,"||",right);
-//        }
-//        else if(op.equals("<")){
-//            print(left,"<",right);
-//        }
-//        else if(op.equals(">")){
-//            print(left,">",right);
-//        }
-//        else if(op.equals("<=")){
-//            print(left,"<=",right);
-//        }
-//        else if(op.equals(">=")){
-//            print(left,">=",right);
-//        }
-//        else if(op.equals("==")){
-//            print(left,"==",right);
-//        }
-//        else if(op.equals("!=")){
-//            print(left,"!=",right);
-//        }
-*/
         return null;
     }
 
@@ -310,46 +317,50 @@ public final class Generator implements Ast.Visitor<Void> {
         return null;
     }
 
+    public Object functionHelper(List<Ast.Expr> list){
+        for(int i = 0; i < list.size(); i++){
+            if(i < list.size()-1){
+                visit(list.get(i));
+                print(", ");
+            }
+            else{
+                visit(list.get(i));
+            }
+        }
+        return new Object();
+    }
     @Override
     public Void visit(Ast.Expr.Function ast) {
         String name = ast.getFunction().getJvmName();
-        String args = "";//concatenation of arguuments for printing
+        //String args = "";//concatenation of arguuments for printing
         //how to visit them and concatenate them though?
 
         //issue: when they're visited, they are printed
 
         //this shouldnt work cause they havent been visited
-        for(int i = 0; i < ast.getArguments().size(); i++){
-            if(i < ast.getArguments().size()-1){
-                args = args + ast.getArguments().get(i) + ", ";
-            }
-            else{
-               args = args + ast.getArguments().get(i);
-            }
-        }
+
         if(ast.getReceiver().isPresent()){
-            print(visit(ast.getReceiver().get()),".",name,"(",args,");");
+            print((ast.getReceiver().get()),".",name,"(");
+            functionHelper(ast.getArguments());
+            print(")");
         }
         else{
-            print(name,"(",args,");");
+            print(name,"(");
+            functionHelper(ast.getArguments());
+            print(")");
         }
         return null;
     }
 
 }
 /*
-- concatenation issue in METHOD and FUNCTION
-
-- ask about visiting in binary
-
-- for FOR and WHILE which one is which between value and name
-
-- does the word 'generated' in the instructions mean 'visited'
-
-- DECLARATION - if there is no typename present then how to set the type
-
-- look at note atop METHOD , first line
+- concatenation issue in METHOD and FUNCTION = helpoer fn
 
 
+
+
+
+
+DO NOT VISIT INSIDE A CALL TO PRINT
 
  */
