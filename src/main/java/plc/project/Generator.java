@@ -72,7 +72,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Field ast) {
         //again do we assume the type name is correctly formatted
         if(ast.getValue().isPresent()){
-            print(ast.getTypeName()," ",ast.getName()," = ",visit(ast.getValue().get()),";");
+            print(ast.getTypeName()," ",ast.getName()," = ",(ast.getValue().get()),";");
         }
         else{
             print(ast.getTypeName()," ",ast.getName(),";");
@@ -80,12 +80,16 @@ public final class Generator implements Ast.Visitor<Void> {
         return null;
     }
 
+    public void methodHelper(){
+
+        return;
+    }
     @Override
     public Void visit(Ast.Method ast) {
-        //USE GetVar.getType.GetJVNname for return typ
-        //again the concatenation issue = fix with helper function that visist them in place
-        String inner = "";
 
+        //is getparamNames formatted correctly? - used a helper function for formatting in FUNCTION
+
+        String inner = "";
         for(int i = 0; i < ast.getParameters().size(); i++){
             if(i < ast.getParameters().size()-1){
                 inner = inner + ast.getParameterTypeNames().get(i) +" "+ ast.getParameters().get(i) + ", ";
@@ -93,7 +97,6 @@ public final class Generator implements Ast.Visitor<Void> {
             else{
                 inner = inner + ast.getParameterTypeNames().get(i) +" "+ ast.getParameters().get(i);
             }
-
         }
         print(ast.getFunction().getReturnType().getJvmName()," ",ast.getFunction().getJvmName(),"(",inner,") {");
         indent++;
@@ -104,7 +107,6 @@ public final class Generator implements Ast.Visitor<Void> {
         indent--;
         newline(indent);
         print("}");
-
 
         return null;
     }
@@ -193,7 +195,7 @@ public final class Generator implements Ast.Visitor<Void> {
         //would value.getType be LIST or the TYPE OF THE LIST
         Environment.Type vartype = ast.getValue().getType();
         String type = t2s(vartype);
-        print("for (",type," ",ast.getName()," : ",visit(ast.getValue()),") {");
+        print("for (",type," ",ast.getName()," : ",(ast.getValue()),") {");
         indent++;
         for(Ast.Stmt x : ast.getStatements()){
             newline(indent);
@@ -309,7 +311,7 @@ public final class Generator implements Ast.Visitor<Void> {
     public Void visit(Ast.Expr.Access ast) {
         String name = ast.getVariable().getJvmName();
         if(ast.getReceiver().isPresent()){
-            print(visit(ast.getReceiver().get()),".",(name));
+            print((ast.getReceiver().get()),".",(name));
         }
         else{
             print(name);
@@ -317,7 +319,7 @@ public final class Generator implements Ast.Visitor<Void> {
         return null;
     }
 
-    public Object functionHelper(List<Ast.Expr> list){
+    public void functionHelper(List<Ast.Expr> list){
         for(int i = 0; i < list.size(); i++){
             if(i < list.size()-1){
                 visit(list.get(i));
@@ -327,17 +329,11 @@ public final class Generator implements Ast.Visitor<Void> {
                 visit(list.get(i));
             }
         }
-        return new Object();
+        return;
     }
     @Override
     public Void visit(Ast.Expr.Function ast) {
         String name = ast.getFunction().getJvmName();
-        //String args = "";//concatenation of arguuments for printing
-        //how to visit them and concatenate them though?
-
-        //issue: when they're visited, they are printed
-
-        //this shouldnt work cause they havent been visited
 
         if(ast.getReceiver().isPresent()){
             print((ast.getReceiver().get()),".",name,"(");

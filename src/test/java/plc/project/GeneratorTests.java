@@ -56,6 +56,49 @@ public class GeneratorTests {
         );
     }
 
+    /*@ParameterizedTest // still working on this one lol
+    @MethodSource
+    void testField(String test, Ast.Field ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testField() {
+        return Stream.of(
+                Arguments.of("Declaration",
+                        init(new Ast.Field(
+                        "x", "x", Optional.empty()), ast -> ast.setVariable(new Environment.Variable("x", "x", Environment.Type.STRING, Environment.NIL)),
+                "String x;"
+        ),
+                Arguments.of("Initialization", new Ast.Field("name", Optional.of(new Ast.Expr.Literal(BigInteger.ONE))), BigInteger.ONE)
+        )
+    }*/
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void testMethod(String test, Ast.Method ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testMethod() {
+        return Stream.of(
+                Arguments.of("Sample Method",
+                        // LET name: Integer;
+                        init(new Ast.Method("main", Arrays.asList(), Arrays.asList(), Optional.of("Integer"), Arrays.asList(
+                                new Ast.Stmt.Expression(init(new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
+                                        init(new Ast.Expr.Literal("Hello, World!"), ast -> ast.setType(Environment.Type.STRING))
+                                )), ast -> ast.setFunction(new Environment.Function("print", "System.out.println", Arrays.asList(Environment.Type.ANY), Environment.Type.NIL, args -> Environment.NIL)))),
+                                new Ast.Stmt.Return(init(new Ast.Expr.Literal(BigInteger.ZERO), ast -> ast.setType(Environment.Type.INTEGER)))
+                        )), ast -> ast.setFunction(new Environment.Function("main", "main", Arrays.asList(), Environment.Type.INTEGER, args -> Environment.NIL))),
+                        String.join(System.lineSeparator(),
+                                "int main() {",
+                                "    System.out.println(\"Hello, World!\");",
+                                "    return 0;",
+                                "}"
+                        )
+                )
+        );
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource
     void testDeclarationStatement(String test, Ast.Stmt.Declaration ast, String expected) {
@@ -72,9 +115,28 @@ public class GeneratorTests {
                 Arguments.of("Initialization",
                         // LET name = 1.0;
                         init(new Ast.Stmt.Declaration("name", Optional.empty(), Optional.of(
-                                init(new Ast.Expr.Literal(new BigDecimal("1.0")),ast -> ast.setType(Environment.Type.DECIMAL))
+                                init(new Ast.Expr.Literal(new BigDecimal("1.0")), ast -> ast.setType(Environment.Type.DECIMAL))
                         )), ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.DECIMAL, Environment.NIL))),
                         "double name = 1.0;"
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void testAssignmentStatement(String test, Ast.Stmt.Assignment ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testAssignmentStatement() {
+        return Stream.of(
+                Arguments.of("Assignment",
+                        // variable = "Hello World";
+                        new Ast.Stmt.Assignment(
+                                init(new Ast.Expr.Access(Optional.empty(), "variable"), ast -> ast.setVariable(new Environment.Variable("variable", "variable", Environment.Type.STRING, Environment.NIL))),
+                                init(new Ast.Expr.Literal("Hello World"), ast -> ast.setType(Environment.Type.STRING))
+                        ),
+                        "variable = \"Hello World\";"
                 )
         );
     }
@@ -124,6 +186,30 @@ public class GeneratorTests {
         );
     }
 
+    @ParameterizedTest
+    @MethodSource
+    void testGroupExpression(String test, Ast.Expr.Group ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testGroupExpression() {
+        return Stream.of(
+                Arguments.of("Literal",
+                        init(new Ast.Expr.Group(
+                                        init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER))),
+                                ast -> ast.setType(Environment.Type.INTEGER)),
+                        "(1)"
+                ),
+                Arguments.of("Binary",
+                        init(new Ast.Expr.Group(new Ast.Expr.Binary("+",
+                                        init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER)),
+                                        init(new Ast.Expr.Literal(BigInteger.TEN), ast -> ast.setType(Environment.Type.INTEGER)))),
+                                ast -> ast.setType(Environment.Type.INTEGER)),
+                        "(1 + 10)"
+                )
+        );
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource
     void testBinaryExpression(String test, Ast.Expr.Binary ast, String expected) {
@@ -153,6 +239,38 @@ public class GeneratorTests {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource
+    void testAccessExpression(String test, Ast.Expr.Access ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testAccessExpression() {
+        return Stream.of(
+                Arguments.of("Access",
+                        // variable
+                        init(new Ast.Expr.Access(Optional.empty(), "variable"), ast -> ast.setVariable(new Environment.Variable("variable", "variable", Environment.Type.NIL, Environment.NIL))),
+                        "variable"
+                ),
+                Arguments.of("Field",
+                        init(new Ast.Expr.Access(Optional.of(
+                                init(new Ast.Expr.Access(Optional.empty(), "object"), ast -> ast.setVariable(new Environment.Variable("object", "object", Environment.Type.NIL, Environment.NIL)))
+                        ),
+                                "field"), ast -> ast.setVariable(new Environment.Variable("field", "field", Environment.Type.NIL, Environment.NIL))),
+                        "object.field"
+                ),
+                Arguments.of("3Peat",
+                        init(new Ast.Expr.Access(Optional.of(
+                                init(new Ast.Expr.Access(Optional.of(
+                                        init(new Ast.Expr.Access(Optional.empty(), "lil"), ast -> ast.setVariable(new Environment.Variable("lil", "lil", Environment.Type.NIL, Environment.NIL)))
+                                ), "wayne"), ast -> ast.setVariable(new Environment.Variable("wayne", "wayne", Environment.Type.NIL, Environment.NIL)))
+                        ),
+                                "3peat"), ast -> ast.setVariable(new Environment.Variable("3peat", "3peat", Environment.Type.NIL, Environment.NIL))),
+                        "lil.wayne.3peat"
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
     void testFunctionExpression(String test, Ast.Expr.Function ast, String expected) {
         test(ast, expected);
     }
@@ -175,6 +293,57 @@ public class GeneratorTests {
                                 init(new Ast.Expr.Literal(BigInteger.valueOf(5)), ast -> ast.setType(Environment.Type.INTEGER))
                         )), ast -> ast.setFunction(new Environment.Function("slice", "substring", Arrays.asList(Environment.Type.ANY, Environment.Type.INTEGER, Environment.Type.INTEGER), Environment.Type.NIL, args -> Environment.NIL))),
                         "\"string\".substring(1, 5)"
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void testLiteralExpression(String test, Ast.Expr.Literal ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testLiteralExpression() {
+        return Stream.of(
+                Arguments.of("True",
+                        // true
+                        init(new Ast.Expr.Literal(Boolean.TRUE), ast -> ast.setType(Environment.Type.BOOLEAN)),
+                        "true"
+                ),
+                Arguments.of("One",
+                        // 1
+                        init(new Ast.Expr.Literal(BigInteger.ONE), ast -> ast.setType(Environment.Type.INTEGER)),
+                        "1"
+                ),
+                Arguments.of("Hello World",
+                        // 1
+                        init(new Ast.Expr.Literal("Hello World!"), ast -> ast.setType(Environment.Type.STRING)),
+                        "\"Hello World!\""
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void testReturnExpression(String test, Ast.Stmt.Return ast, String expected) {
+        test(ast, expected);
+    }
+
+    private static Stream<Arguments> testReturnExpression() {
+        return Stream.of(
+                Arguments.of("5 * 10",
+                        // return 5 * 10;
+                        new Ast.Stmt.Return(
+                                init(new Ast.Expr.Binary("*",
+                                        init(new Ast.Expr.Literal(BigInteger.valueOf(5)), ast -> ast.setType(Environment.Type.INTEGER)),
+                                        init(new Ast.Expr.Literal(BigInteger.valueOf(10)), ast -> ast.setType(Environment.Type.INTEGER))
+                                ), ast -> ast.setType(Environment.Type.INTEGER))
+                        ),
+                        "return 5 * 10;"
+                ),
+                Arguments.of("0",
+                        new Ast.Stmt.Return(init(new Ast.Expr.Literal(BigInteger.ZERO), ast -> ast.setType(Environment.Type.INTEGER))),
+                        "return 0;"
                 )
         );
     }
