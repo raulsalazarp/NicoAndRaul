@@ -350,13 +350,5 @@ public final class Generator implements Ast.Visitor<Void> {
 
 }
 /*
-- concatenation issue in METHOD and FUNCTION = helpoer fn
-
-
-
-
-
-
-DO NOT VISIT INSIDE A CALL TO PRINT
 
  */
