@@ -73,10 +73,10 @@ public final class Generator implements Ast.Visitor<Void> {
         //again do we assume the type name is correctly formatted
         if(ast.getValue().isPresent()){
             //convert type names to jvm names (use getjvmname() in environment)
-            print(ast.getTypeName()," ",ast.getName()," = ",(ast.getValue().get()),";");
+            print(ast.getVariable().getJvmName() ," ",ast.getName()," = ",(ast.getValue().get()),";");
         }
         else{
-            print(ast.getTypeName()," ",ast.getName(),";");
+            print(ast.getVariable().getJvmName() ," ",ast.getName(),";");
         }
         return null;
     }
@@ -352,4 +352,21 @@ public final class Generator implements Ast.Visitor<Void> {
 
 }
 /*
+GeneratorTests (9/17):
+  Source (1/2):
+    Multiple Fields & Methods: Incorrect result, received public class Main {␍␊    Integer x;␍␊    Decimal y;␍␊    String z;␍␊␍␊    public static void main(String[] args) {␍␊        System.exit(new Main().main());␍␊    }␍␊␍␊    int f() {␍␊        return x;␍␊    }␍␊    double g() {␍␊        return y;␍␊    }␍␊    String h() {␍␊        return z;␍␊    }␍␊    int main() {␍␊    }␍␊␍␊}
+  Field (0/2):
+    Declaration: Incorrect result, received Integer name;
+    Initialization: Incorrect result, received Decimal name = 1.0;
+  Method (0/2):
+    Square: Incorrect result, received double square(Decimal num) {␍␊    return num * num;␍␊}
+    Multiple Statements: Incorrect result, received Void func(Integer x, Decimal y, String z) {␍␊    System.out.println(x);␍␊    System.out.println(y);␍␊    System.out.println(z);␍␊}
+  Stmt (4/6):
+    For (0/1):
+      For: Incorrect result, received for (IntegerIterable num : list) {␍␊    System.out.println(num);␍␊}
+    While (1/2):
+      Empty Statements: Incorrect result, received while (cond) {␍␊}
+  Expr (4/5):
+    Binary (3/4):
+      Comparison: Incorrect result, received 1>10
  */
