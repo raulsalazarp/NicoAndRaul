@@ -65,12 +65,12 @@ public final class Parser {
     public Ast.Field parseField() throws ParseException {
         //we need string name and Optional<Expr> value;
         if (match("LET")) {
-            if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
-                String name = tokens.get(0).getLiteral();
-                match(Token.Type.IDENTIFIER);
-                match(":");
-                String type = tokens.get(0).getLiteral();
-                match(Token.Type.IDENTIFIER);
+            if (match(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
+                String name = tokens.get(-3).getLiteral();
+                //match(Token.Type.IDENTIFIER);
+                //match(":");
+                String type = tokens.get(-1).getLiteral();
+                //match(Token.Type.IDENTIFIER);
                 if (match("=")) {
                     Ast.Expr value = parseExpression();
                     if (match(";")) {
@@ -98,23 +98,23 @@ public final class Parser {
                 String name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
                 if (match("(")) {
-                    if (peek(Token.Type.IDENTIFIER,':',Token.Type.IDENTIFIER)) {
-                        String temp = tokens.get(0).getLiteral();
+                    if (match(Token.Type.IDENTIFIER,':',Token.Type.IDENTIFIER)) {
+                        String temp = tokens.get(-3).getLiteral();
                         params.add(temp);
-                        match(Token.Type.IDENTIFIER);
-                        match(":");
-                        String type = tokens.get(0).getLiteral();
+                        //match(Token.Type.IDENTIFIER);
+                        //match(":");
+                        String type = tokens.get(-1).getLiteral();
                         paramTypes.add(type);
-                        match(Token.Type.IDENTIFIER);
+                        //match(Token.Type.IDENTIFIER);
                         while (match(",")) {
-                            if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
-                                temp = tokens.get(0).getLiteral();
+                            if (match(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
+                                temp = tokens.get(-3).getLiteral();
                                 params.add(temp);
-                                match(Token.Type.IDENTIFIER);
-                                match(":");
-                                type = tokens.get(0).getLiteral();
+                                //match(Token.Type.IDENTIFIER);
+                                //match(":");
+                                type = tokens.get(-1).getLiteral();
                                 paramTypes.add(type);
-                                match(Token.Type.IDENTIFIER);
+                                //match(Token.Type.IDENTIFIER);
                             } else {
                                 throw new ParseException("Error: @ index " + indexFinder() + " not an identifier", indexFinder());
                             }
@@ -123,11 +123,11 @@ public final class Parser {
                     if (match(")")) {
                         Boolean ret = false;
                         String returnType = "";
-                        if (peek(":",Token.Type.IDENTIFIER)) {
+                        if (match(":",Token.Type.IDENTIFIER)) {
                             ret= true;
-                            match(":");
-                            returnType = tokens.get(0).getLiteral();
-                            match(Token.Type.IDENTIFIER);
+                            //match(":");
+                            returnType = tokens.get(-1).getLiteral();
+                            //match(Token.Type.IDENTIFIER);
                         }
                         if (match("DO")) {
                             while (!match("END")) { //check if theres tokens left
@@ -189,11 +189,11 @@ public final class Parser {
                 match(Token.Type.IDENTIFIER);
                 String type = "";
                 Boolean uder = false;
-                if(peek(":",Token.Type.IDENTIFIER)){
+                if(match(":",Token.Type.IDENTIFIER)){
                     uder = true;
-                    match(":");
-                    type = tokens.get(0).getLiteral();
-                    match(Token.Type.IDENTIFIER);
+                    //match(":");
+                    type = tokens.get(-1).getLiteral();
+                    //match(Token.Type.IDENTIFIER);
                 }
                 if (match("=")) {
                     Ast.Expr value = parseExpression();
@@ -614,22 +614,4 @@ public final class Parser {
     }
 
 }
-//ready to submit final ting
-/*
-ParserTests (51/56):
-    Source (4/5):
-        Method Field: Expected a ParseException to be thrown, received Ast.Source{fields=[]functions=[Ast.Function{name=\'name\', parameters=[], statements=[Ast.Stmt.Expression{expression=Ast.Expr.Access{receiver=Optional.empty, name=\'stmt\'}}]}]}
-    Expr (21/25):
-        Literal (6/7):
-            Nil Literal: Incorrect result, received Ast.Expr.Access{receiver=Optional.empty, name=\'NIL\'}
-        Access (2/3):
-            Invalid Name: Expected a ParseException to be thrown, received Ast.Expr.Access{receiver=Optional.empty, name=\'obj\'}
-        Priority (1/3):
-            And Or: Incorrect result, received Ast.Expr.Binary{operator=\'AND\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'OR\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
-            Equals Not Equals: Incorrect result, received Ast.Expr.Binary{operator=\'==\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr1\'}, right=Ast.Expr.Binary{operator=\'!=\', left=Ast.Expr.Access{receiver=Optional.empty, name=\'expr2\'}, right=Ast.Expr.Access{receiver=Optional.empty, name=\'expr3\'}}}
-    Error (1/1):
-        Missing Closing Parenthesis: Incorrect index, received 2.
-        Invalid Closing Parenthesis: Incorrect index, received 2.
-        Missing DO: Incorrect index, received 2.
-        Invalid DO: Incorrect index, received 2.
- */
+///ready to submit new parser for test sub
