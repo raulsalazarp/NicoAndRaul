@@ -65,12 +65,12 @@ public final class Parser {
     public Ast.Field parseField() throws ParseException {
         //we need string name and Optional<Expr> value;
         if (match("LET")) {
-            if (match(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
-                String name = tokens.get(-3).getLiteral();
-                //match(Token.Type.IDENTIFIER);
-                //match(":");
-                String type = tokens.get(-1).getLiteral();
-                //match(Token.Type.IDENTIFIER);
+            if (peek(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
+                String name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+                match(":");
+                String type = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
                 if (match("=")) {
                     Ast.Expr value = parseExpression();
                     if (match(";")) {
@@ -98,7 +98,7 @@ public final class Parser {
                 String name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
                 if (match("(")) {
-                    if (match(Token.Type.IDENTIFIER,':',Token.Type.IDENTIFIER)) {
+                    if (match(Token.Type.IDENTIFIER,":",Token.Type.IDENTIFIER)) {
                         String temp = tokens.get(-3).getLiteral();
                         params.add(temp);
                         //match(Token.Type.IDENTIFIER);
